@@ -10,11 +10,11 @@ import pprint
 import sys
 import time
 from datetime import timedelta
-import zipfile2
+import zipfile
+#import zipfile2
 import zlib
 #import zlib2
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -75,7 +75,8 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     ################################################################################################
     ################################################################################################
 
-    zfile         = zipfile2.ZipFile(zipfilename)
+    #zfile         = zipfile2.ZipFile(zipfilename)
+    zfile         = zipfile.ZipFile(zipfilename)
     lst_pkl_files = zfile.namelist()   
     
     # to do, check sorted
@@ -413,7 +414,7 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
 ####################################################################################################
 
 nEventsPerFileToProcess = 1000
-nFilesZip               = 1 #200
+nFilesZip               = 200
 nEvents                 = nEventsPerFileToProcess*nFilesZip
 
 print()
@@ -421,25 +422,19 @@ print()
 if (nFilesZip == -1):
     nFilesZip = len(lst_contents)
 
-dir_input    = '../pax_run/pax_output/Mar25/'
+dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
 dir_format   = dir_input + "instructions_" + ('[0-9]' * 6)
 file_format  = 'XENON1T-0-000000000-000000999-000001000.zip'
 lst_contents = glob.glob(dir_format)
+print(len(lst_contents))
 
 
 ####################################################################################################
 # output
 ####################################################################################################
 
-ver              = datetime.datetime.now().strftime("%y%m%d%H%M")
-#ver              = 'test'
-#ver              = 's2waveforms_' + datetime.datetime.now().strftime("%y%m%d%H%M")
-ver              = 's2waveforms_test_v2'
-
-#dir_out_pkl      = 'merged' + '/'
-#dir_out_pkl      = 'merged/apr26'
-#dir_out_pkl      = 'merged/apr30'
-dir_out_pkl      = 'merged/may02'
+ver              = 's2waveforms_v2'
+dir_out_pkl      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
 
 file_pkl         = dir_out_pkl + 'merged_pax_' + str(nEvents % 1000) + 'k_' + ver + '.pkl'
 dir_waveforms    = dir_out_pkl + '/' + 'waveforms_' + ver
@@ -499,16 +494,19 @@ for iZip in range(0, nFilesZip):
     ################################################################################################
     
     zipfilename = lst_contents[iZip] + '/' + file_format
-    
+    zip_pkl     = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
+
     if (not os.path.exists(zipfilename)):
         
         print("Error! File: '" + str(zipfilename) + "' does not exist.")
     
         continue
         
-    print("Zip File: '" + str(zipfilename) + "'")
-    
-    
+    #print("Input Zip File:  '" + zipfilename + "'")
+    #print("Output PKL File: '" + zip_pkl + "'")
+    #continue
+
+
     ################################################################################################
     ################################################################################################
     
@@ -516,8 +514,6 @@ for iZip in range(0, nFilesZip):
     zip_pkl       = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
 
     #display(df_zip_merged[:][cols])
-    
-    #print(zip_pkl)
     
     df_zip_merged.to_pickle(zip_pkl)
     
