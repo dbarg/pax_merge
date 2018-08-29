@@ -16,8 +16,12 @@ import pandas as pd
 ####################################################################################################
 ####################################################################################################
 
-dir_input = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+#dir_input = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
 file_inst = '/home/dbarge/pax_instructions/merged_instructions_files.pkl'
+
+dir_input = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
+#file_inst = '/project/lgrandi/dbarge/pax_instructions/merged_instructions_files.pkl'
+
 file_pax  = dir_input + 'merged_zip_200000.pkl'
 file_all  = dir_input + 'merged_all_200000.pkl'
 

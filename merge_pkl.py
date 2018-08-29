@@ -31,10 +31,23 @@ from pax_utils import waveform_pax_utils
 from pax_utils import waveform_utils
 from pax_utils import s1s2_utils
 
-sys.path.append(os.path.abspath("../pax"))
-from pax import core
-
 pd.set_option('display.max_columns', 500)
+
+
+####################################################################################################
+####################################################################################################
+
+#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
+dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
+
+#dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
+#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
+dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
+
+#sys.path.append(os.path.abspath("../pax_v6.5.1"))
+sys.path.append(os.path.abspath("../pax_v6.8.3"))
+
+from pax import core
 
 
 ####################################################################################################
@@ -128,6 +141,8 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     
     for iPklFile, pklfilename in enumerate(lst_pkl_files):
     
+        #print("iPKlFile: " + str(iPklFile))
+
         if (iPklFile >= nEventsPerFileToProcess):
     
             break
@@ -390,10 +405,10 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     ################################################################################################
     ################################################################################################
     
-    print("test: " + str(wf_arrs_equal             ))
-    print("test: " + str(sum_summed_waveforms_equal))
-    print("test: " + str(arr_s2integrals_equal     ))
-    print("test: " + str(sum_s2integrals_equal     ))
+    #print("test: " + str(wf_arrs_equal             ))
+    #print("test: " + str(sum_summed_waveforms_equal))
+    #print("test: " + str(arr_s2integrals_equal     ))
+    #print("test: " + str(sum_s2integrals_equal     ))
 
         
     ################################################################################################
@@ -422,11 +437,17 @@ print()
 if (nFilesZip == -1):
     nFilesZip = len(lst_contents)
 
-dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
+#dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
+#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
 dir_format   = dir_input + "instructions_" + ('[0-9]' * 6)
 file_format  = 'XENON1T-0-000000000-000000999-000001000.zip'
 lst_contents = glob.glob(dir_format)
-print(len(lst_contents))
+lst_contents.sort()
+
+nContents = len(lst_contents)
+
+print(nContents)
+assert(nContents > 0)
 
 
 ####################################################################################################
@@ -434,7 +455,8 @@ print(len(lst_contents))
 ####################################################################################################
 
 ver              = 's2waveforms_v2'
-dir_out_pkl      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+#dir_out_pkl      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+#dir_out_pkl      = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
 
 file_pkl         = dir_out_pkl + 'merged_pax_' + str(nEvents % 1000) + 'k_' + ver + '.pkl'
 dir_waveforms    = dir_out_pkl + '/' + 'waveforms_' + ver
@@ -502,9 +524,8 @@ for iZip in range(0, nFilesZip):
     
         continue
         
-    #print("Input Zip File:  '" + zipfilename + "'")
-    #print("Output PKL File: '" + zip_pkl + "'")
-    #continue
+    print("Input Zip File:  '" + zipfilename + "'")
+    print("Output PKL File: '" + zip_pkl + "'")
 
 
     ################################################################################################
@@ -515,6 +536,8 @@ for iZip in range(0, nFilesZip):
 
     #display(df_zip_merged[:][cols])
     
+    #print(zip_pkl)
+
     df_zip_merged.to_pickle(zip_pkl)
     
     

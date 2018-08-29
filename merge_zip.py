@@ -16,7 +16,8 @@ print()
 # Merge zip files
 ####################################################################################################
 
-dir_base      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+#dir_base      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+dir_base      = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
 dir_in_zip    = dir_base + 'zip/'
 lst_files_zip = os.listdir(dir_in_zip)
 lst_files_zip.sort()
