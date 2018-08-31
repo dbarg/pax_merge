@@ -38,11 +38,13 @@ pd.set_option('display.max_columns', 500)
 ####################################################################################################
 
 #dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
-dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
+#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
+dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/merged/'
 
 #dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
 #dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
-dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
+#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
+dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
 
 #sys.path.append(os.path.abspath("../pax_v6.5.1"))
 sys.path.append(os.path.abspath("../pax_v6.8.3"))
