@@ -1,4 +1,6 @@
 merged
+*.h5
+*.pkl
 *.png
 
 # Byte-compiled / optimized / DLL files
