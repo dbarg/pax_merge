@@ -12,15 +12,12 @@ import sys
 import time
 from datetime import timedelta
 import zipfile
-#import zipfile2
 import zlib
-#import zlib2
 
 from IPython.display import clear_output
 from IPython.display import display
 
-#pax_str = 'pax_v6.10.1'
-pax_str = 'pax_v6.5.1'
+pax_str = 'pax_v6.10.1'
 
 
 #------------------------------------------------------------------------------
@@ -29,14 +26,12 @@ pax_str = 'pax_v6.5.1'
 #sys.path.append(os.path.abspath("../"))
 #sys.path.append(os.path.abspath('..//' + pax_str))
 
-from pax_utils import event_utils
-from pax_utils import file_utils
-from pax_utils import interaction_utils
-from pax_utils import s1s2_utils
-from pax_utils import numeric_utils
-from pax_utils import waveform_pax_utils
-from pax_utils import waveform_utils
-from pax_utils import s1s2_utils
+from pax_utils import utils_event as event_utils
+from pax_utils import utils_file as file_utils
+from pax_utils import utils_interaction as interaction_utils
+from pax_utils import utils_s1s2 as s1s2_utils
+from pax_utils import utils_waveform as waveform_utils
+#from pax_utils import utils_waveform_pax as waveform_pax_utils
 
 from pax import core
 
@@ -46,16 +41,8 @@ pd.set_option('display.max_columns', 500)
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/' + pax_str + '/merged/'
-#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
-#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
-#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/merged/'
-
-dir_input    = '/project/lgrandi/dbarge/simulation/wimp/' + pax_str + '/'
-#dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
-#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
-#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
-#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
+dir_input    = '/dali/lgrandi/dbarge/xe1t-processing/pax_run/test/'
+dir_out_pkl  = '/dali/lgrandi/dbarge/xe1t-processing/'
 
 
 #------------------------------------------------------------------------------
@@ -89,9 +76,6 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
     
-    ta = time.time()
-
-    #zfile         = zipfile2.ZipFile(zipfilename)
     zfile         = zipfile.ZipFile(zipfilename)
     lst_pkl_files = zfile.namelist()   
     
@@ -105,25 +89,6 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     #event  = None
     df_zip_merged   = pd.DataFrame()
     df_s2_waveforms = pd.DataFrame()
-    
-    t1 = time.time()
-    t2 = time.time()
-    t3 = time.time()
-    t4 = time.time()
-    t5 = time.time()
-    t6 = time.time()
-    
-    dt1_0 = 0
-    dt2_1 = 0
-    dt3_2 = 0
-    dt4_3 = 0
-    dt5_4 = 0
-    dt6_5 = 0
-    dt7_6 = 0
-    dt8_7 = 0
-    dt9_8 = 0
-    dt10_9 = 0
-    dt11_10 = 0
     
     num_wf_arrs_equal              = 0
     num_sum_summed_waveforms_equal = 0
@@ -142,19 +107,20 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
     
-        #print("iPKlFile: " + str(iPklFile))
+        print("iPKlFile: " + str(iPklFile))
+        
+        continue
+        
         
         t0 = time.time()
         event_number          = iZip*nEventsPerZipFile + iPklFile
         file_out_s2_waveforms = dir_waveforms_s2 + '/' + 'event' + format(event_number, '07d') + '_S2waveforms' + '.pkl'
         #print(" -> Event Number: " + str(event_number))
         #clear_output(wait=True)        
-        t1 = time.time()
         #event  = file_utils.getPaxEventFromPklFileInZipArchive(zipfilename, pklfilename)
         event = pickle.loads(zlib.decompress(zfile.open(pklfilename).read()))
         interactions  = event.interactions
         nInteractions = len(interactions)
-        t2 = time.time()
         #if (nInteractions != 1): continue
             
             
@@ -162,16 +128,11 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
         #----------------------------------------------------------------------
         
         df_pkl_event  = event_utils.getEventDataFrameFromEvent(event)
-        t3            = time.time()
         df_pkl_intr   = interaction_utils.getInteractionDataFrameFromEvent(event)
-        t4            = time.time()
         df_pkl_s2s    = s1s2_utils.getS2integralsDataFrame(event, 127)
-        t5            = time.time()
         df_pkl_merged                 = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
         df_pkl_merged['event_number'] = event_number
-        t6            = time.time()
         df_zip_merged = df_zip_merged.append(df_pkl_merged)
-        t7            = time.time()
         df_channels_waveforms_top = pd.DataFrame()
         
         if (nInteractions < 1):
@@ -299,21 +260,6 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
         # End loop on PKL files in ZIP File
         #----------------------------------------------------------------------
 
-        t11 = time.time()
-        
-        dt1_0   = round(t1  - t0, 3)
-        dt2_1   = round(t2  - t1, 3)
-        dt3_2   = round(t3  - t2, 3)
-        dt4_3   = round(t4  - t3, 3)
-        dt5_4   = round(t5  - t4, 3)
-        dt6_5   = round(t6  - t5, 3)
-        dt7_6   = round(t7  - t6, 3)
-        dt8_7   = round(t8  - t7, 3)
-        dt9_8   = round(t9  - t8, 3)
-        dt10_9  = round(t10 - t9, 3)
-        dt11_10 = round(t11 - t10, 3)
-        dt11_0  = round(t11 - t0, 3)
-        
         if (False):
             
             print()
@@ -347,126 +293,130 @@ def processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s
     
     df_zip_merged.reset_index(inplace=True, drop=True)
        
-    tb = time.time()
-    dt = tb - ta
+    
+    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     
     return df_zip_merged
 
-    
-    
-# input
-
-nEventsPerFileToProcess = 1000
-nFilesZip               = 200
-nEvents                 = nEventsPerFileToProcess*nFilesZip
-
-print()
-
-if (nFilesZip == -1):
-    nFilesZip = len(lst_contents)
-
-#dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
-#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
-dir_format   = dir_input + "instructions_" + ('[0-9]' * 6)
-file_format  = 'XENON1T-0-000000000-000000999-000001000.zip'
-lst_contents = glob.glob(dir_format)
-lst_contents.sort()
-
-nContents = len(lst_contents)
-
-print(nContents)
-assert(nContents > 0)
-
 
 #------------------------------------------------------------------------------
-# output
 #------------------------------------------------------------------------------
 
-ver              = 's2waveforms_v2'
-#dir_out_pkl      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
-#dir_out_pkl      = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
+def main():
 
-file_pkl         = dir_out_pkl + 'merged_pax_' + str(nEvents % 1000) + 'k_' + ver + '.pkl'
-dir_waveforms    = dir_out_pkl + '/' + 'waveforms_' + ver
-dir_waveforms_s2 = dir_waveforms + '/' + 's2'
-
-if(not os.path.isdir(dir_waveforms)):
-    os.mkdir(dir_waveforms)
-    if(not os.path.isdir(dir_waveforms_s2)):
-        os.mkdir(dir_waveforms_s2)
+    #------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
+    
+    nEventsPerFileToProcess = 1000
+    nFilesZip               = 2
+    nEvents                 = nEventsPerFileToProcess*nFilesZip
+    
+    print()
+    
+    if (nFilesZip == -1):
+        nFilesZip = len(lst_contents)
+    
+    #dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
+    #dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
+    dir_format   = dir_input + "instructions_" + ('[0-9]' * 6)
+    file_format  = 'XENON1T-0-000000000-000000999-000001000.zip'
+    lst_contents = glob.glob(dir_format)
+    lst_contents.sort()
+    
+    nContents = len(lst_contents)
+    
+    print(nContents)
+    assert(nContents > 0)
+    
+    
+    #------------------------------------------------------------------------------
+    # output
+    #------------------------------------------------------------------------------
+    
+    ver              = 's2waveforms_v2'
+    #dir_out_pkl      = '/home/dbarge/scratch/simulations/wimp/merged/may07/'
+    #dir_out_pkl      = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
+    
+    file_pkl         = dir_out_pkl + 'merged_pax_' + str(nEvents % 1000) + 'k_' + ver + '.pkl'
+    dir_waveforms    = dir_out_pkl + '/' + 'waveforms_' + ver
+    dir_waveforms_s2 = dir_waveforms + '/' + 's2'
+    
+    if(not os.path.isdir(dir_waveforms)):
+        os.mkdir(dir_waveforms)
+        if(not os.path.isdir(dir_waveforms_s2)):
+            os.mkdir(dir_waveforms_s2)
+        else:
+            print("\nDirectory '" + dir_waveforms_s2 + "' exists!\n") 
     else:
-        print("\nDirectory '" + dir_waveforms_s2 + "' exists!\n") 
-else:
-    print("\nDirectory '" + dir_waveforms + "' exists!\n")
-
+        print("\nDirectory '" + dir_waveforms + "' exists!\n")
     
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-lst_cols = []
-lst_evt  = event_utils.getColumns()
-lst_int  = interaction_utils.getColumns()[1:]
-lst_s2s  = s1s2_utils.getS2integralsDataFrameColumns()
-lst_cols.extend(lst_evt)
-lst_cols.extend(lst_int)
-lst_cols.extend(lst_s2s)
-
-arr_init = range(0, nEvents)
-
-df_events = pd.DataFrame(columns=lst_cols, index=pd.Index(arr_init))
-df        = pd.DataFrame()
-
-t0 = time.time()
-
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-cols_s2 = s1s2_utils.getS2integralsDataFrameColumns()
-
-cols = []
-cols.append('event_number')
-cols.append('intr_count')
-cols.append('intr_x')
-cols.append('intr_y')
-cols.extend(cols_s2)
-
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-for iZip in range(0, nFilesZip):
-    
-    zipfilename = lst_contents[iZip] + '/' + file_format
-    zip_pkl     = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
-
-    if (not os.path.exists(zipfilename)):
         
-        print("Error! File: '" + str(zipfilename) + "' does not exist.")
+    #------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     
+    lst_cols = []
+    lst_evt  = event_utils.getColumns()
+    lst_int  = interaction_utils.getColumns()[1:]
+    lst_s2s  = s1s2_utils.getS2integralsDataFrameColumns()
+    lst_cols.extend(lst_evt)
+    lst_cols.extend(lst_int)
+    lst_cols.extend(lst_s2s)
+    
+    arr_init = range(0, nEvents)
+    
+    df_events = pd.DataFrame(columns=lst_cols, index=pd.Index(arr_init))
+    df        = pd.DataFrame()
+    
+    t0 = time.time()
+    
+    
+    #------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
+    
+    cols_s2 = s1s2_utils.getS2integralsDataFrameColumns()
+    
+    cols = []
+    cols.append('event_number')
+    cols.append('intr_count')
+    cols.append('intr_x')
+    cols.append('intr_y')
+    cols.extend(cols_s2)
+    
+    
+    #------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
+    
+    for iZip in range(0, nFilesZip):
+        
+        zipfilename = lst_contents[iZip] + '/' + file_format
+        #zip_pkl     = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
+        zip_pkl     = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
+    
+        if (not os.path.exists(zipfilename)):
+            
+            print("Error! File: '" + str(zipfilename) + "' does not exist.")
+        
+            continue
+            
+        print("Input Zip File:  '" + zipfilename + "'")
+        print("Output PKL File: '" + zip_pkl + "'")
+        
+        df_zip_merged = processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s2)
+        zip_pkl       = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
+        
+        print(zip_pkl)
+        #df_zip_merged.to_pickle(zip_pkl)
+        
         continue
-        
-    print("Input Zip File:  '" + zipfilename + "'")
-    print("Output PKL File: '" + zip_pkl + "'")
     
-    df_zip_merged = processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s2)
-    zip_pkl       = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
     
-    print(zip_pkl)
-    #df_zip_merged.to_pickle(zip_pkl)
     
-    continue
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
+if (__name__=='__main__'):
+    main()
     
-t1 = time.time()
-dt = round(t1 - t0, 1)
-
-t0_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t0))
-t1_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t1))
-
-print("Start Time:   " + str(t0_str) )
-print("End Time:     " + str(t1_str) )
-print("Elapsed time: " + str(dt) + " s")
-
-
-
+    
+    
