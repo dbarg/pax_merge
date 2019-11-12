@@ -23,6 +23,50 @@ from pax_utils import utils_waveform2 as waveform_utils2
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+def init():
+    
+    nEvents       = 0
+    n_samples_max = 1000
+    
+    sArr = np.zeros(
+        nEvents,
+        dtype=[
+            
+            #------------------------------------------------------------------
+            # True
+            #------------------------------------------------------------------
+            ('x_ins'       , np.float32),
+            ('y_ins'       , np.float32),
+            ('true_left'   , np.int32),
+            ('true_right'  , np.int32),
+            ('true_x'      , np.float32),
+            ('true_y'      , np.float32),
+            ('true_n_els'  , np.int32),
+            ('true_n_phs'  , np.int32),
+            
+            #------------------------------------------------------------------
+            # Reco
+            #------------------------------------------------------------------
+
+            ('left_index'  , np.int32),
+            ('left'        , np.int32),
+            ('right'       , np.int32),
+            ('x'           , np.float32),
+            ('y'           , np.float32),
+            ('z'           , np.float32),
+            ('dt'          , np.float32),
+            #('s2_truncated', np.int32),
+            ('s2_area'     , np.float32),
+            ('s2integrals' , np.float16, 127)
+            ('image'       , np.float16, (127, n_samples_max) ),
+            
+        ]
+    )
+    
+    
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
 def process_dir(dir_in):
 
     #------------------------------------------------------------------------------
@@ -197,8 +241,6 @@ def process_evt(event, cfg, verbose=True):
     # Check that the per-channel S2 integrals from the event and dataframe are equal
     #----------------------------------------------------------------------
     
-    #print(df_pkl_s2s.shape)
-    
     arr_s2integrals_evt   = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
     arr_s2integrals_df    = df_channels_waveforms_top_all[:]['sum'].as_matrix().astype(np.float32)
     arr_s2integrals_diff  = arr_s2integrals_evt - arr_s2integrals_df
@@ -218,7 +260,7 @@ def process_evt(event, cfg, verbose=True):
     eq_s2_ev_wf_ev = np.isclose(s2_sum_evt, wf_sum_evt, atol=marg, rtol=marg)
     eq_s2_ev_wf_df = np.isclose(s2_sum_evt, wf_sum_df , atol=marg, rtol=marg)
     eq_s2_df_wf_df = np.isclose(s2_sum_df , wf_sum_df , atol=marg, rtol=marg)
-    eq_s2_df_wf_ev = np.isclose(s2_sum_df , wf_sum_evt , atol=marg, rtol=marg)
+    eq_s2_df_wf_ev = np.isclose(s2_sum_df , wf_sum_evt, atol=marg, rtol=marg)
     
     if (not arr_s2integrals_equal and True):
         
@@ -256,11 +298,11 @@ def process_evt(event, cfg, verbose=True):
         print("Error! Sum of summed waveform from event & summed S2s from dataframe not equal")
         
     #assert(wf_arrs_equal)
-    assert(eq_wf_df_wf_ev)
-    assert(eq_s2_ev_wf_ev)
-    assert(eq_s2_ev_wf_df)
-    assert(eq_s2_df_wf_df)
-    assert(eq_s2_df_wf_ev)
+    #assert(eq_wf_df_wf_ev)
+    #assert(eq_s2_ev_wf_ev)
+    #assert(eq_s2_ev_wf_df)
+    #assert(eq_s2_df_wf_df)
+    #assert(eq_s2_df_wf_ev)
     
     
     #----------------------------------------------------------------------
