@@ -21,7 +21,17 @@ import pandas as pd
 from IPython.display import clear_output
 from IPython.display import display
 
+
+#pax_str = 'pax_v6.10.1'
+pax_str = 'pax_v6.5.1'
+
+
+####################################################################################################
+####################################################################################################
+
 sys.path.append(os.path.abspath("../"))
+sys.path.append(os.path.abspath('..//' + pax_str))
+
 from pax_utils import event_utils
 from pax_utils import file_utils
 from pax_utils import interaction_utils
@@ -31,25 +41,24 @@ from pax_utils import waveform_pax_utils
 from pax_utils import waveform_utils
 from pax_utils import s1s2_utils
 
+from pax import core
+
 pd.set_option('display.max_columns', 500)
 
 
 ####################################################################################################
 ####################################################################################################
 
+dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/' + pax_str + '/merged/'
 #dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/aug21/'
 #dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/merged/'
-dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/merged/'
+#dir_out_pkl  = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/merged/'
 
+dir_input    = '/project/lgrandi/dbarge/simulation/wimp/' + pax_str + '/'
 #dir_input    = '/home/dbarge/scratch/simulations/wimp/may03/'
 #dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
 #dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.8.3/'
-dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
-
-#sys.path.append(os.path.abspath("../pax_v6.5.1"))
-sys.path.append(os.path.abspath("../pax_v6.8.3"))
-
-from pax import core
+#dir_input    = '/project/lgrandi/dbarge/simulation/wimp/pax_v6.5.1/'
 
 
 ####################################################################################################
@@ -535,12 +544,9 @@ for iZip in range(0, nFilesZip):
     
     df_zip_merged = processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s2)
     zip_pkl       = dir_out_pkl + '/zip/' + 'zip%05d' % iZip + '.pkl'
-
-    #display(df_zip_merged[:][cols])
     
-    #print(zip_pkl)
-
-    df_zip_merged.to_pickle(zip_pkl)
+    print(zip_pkl)
+    #df_zip_merged.to_pickle(zip_pkl)
     
     
     ################################################################################################
