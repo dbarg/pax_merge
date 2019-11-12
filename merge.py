@@ -192,9 +192,7 @@ def process_evt(event, cfg, verbose=True):
 
     wf_arrs_equal = np.allclose(arr_summed_waveform_top_evt, arr_summed_waveform_top_df, atol=1e-1, rtol=1e-1)
 
-    assert(wf_arrs_equal)
-              
-    
+
     #----------------------------------------------------------------------
     # Check that the per-channel S2 integrals from the event and dataframe are equal
     #----------------------------------------------------------------------
@@ -234,10 +232,30 @@ def process_evt(event, cfg, verbose=True):
         print("event {0} Error! S2 Integrals not equal".format(event.event_number))
         print("   max diff: {0:.1f}".format(event.event_number, rmax))
         print()
-        #print(arr_s2integrals_df)
-        #print(arr_s2integrals_evt)
 
     
+    #----------------------------------------------------------------------
+    #----------------------------------------------------------------------
+        
+    if (not wf_arrs_equal):
+        print("Error! Summed waveform from dataframe & event not equal")
+
+    if (not eq_wf_df_wf_ev):
+        print("Error! Sum of summed waveform from dataframe & event not equal")
+
+    if (not eq_s2_ev_wf_ev):
+        print("Error! Sum of summed waveform & summed S2s from event not equal")
+
+    if (not eq_s2_ev_wf_df):
+        print("Error! Sum of summed waveform from dataframe & summed S2s from event not equal")
+        
+    if (not eq_s2_df_wf_df):
+        print("Error! Sum of summed waveform from dataframe & summed S2s from dataframe not equal")
+
+    if (not eq_s2_df_wf_ev):
+        print("Error! Sum of summed waveform from event & summed S2s from dataframe not equal")
+        
+    #assert(wf_arrs_equal)
     assert(eq_wf_df_wf_ev)
     assert(eq_s2_ev_wf_ev)
     assert(eq_s2_ev_wf_df)
