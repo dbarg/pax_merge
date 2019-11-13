@@ -57,26 +57,35 @@ def init_sarr(nEvents, n_samples_max):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def fill_sarr(df):
+def fill_sarr(strArr2, df, idx_arr):
 
-    strArr2[idx_arr]['true_left']    = df.at[idx_df, 't_first_electron_true']
-    strArr2[idx_arr]['true_right']   = df.at[idx_df, 't_last_photon_true']
-    strArr2[idx_arr]['true_nels']    = df.at[idx_df, 'n_electrons_true']
-    strArr2[idx_arr]['true_nphs']    = df.at[idx_df, 'n_photons_true']
-    strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-    strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']            
-    strArr2[idx_arr]['x_true']       = df.at[idx_df, 'x_true']
-    strArr2[idx_arr]['y_true']       = df.at[idx_df, 'y_true']
-    strArr2[idx_arr]['x_s2']         = df.at[idx_df, 's2_x']
-    strArr2[idx_arr]['y_s2']         = df.at[idx_df, 's2_y']
-    strArr2[idx_arr]['s2_left']      = df.at[idx_df, 's2_left']
-    strArr2[idx_arr]['s2_right']     = 2*(df.at[idx_df, 's2_center_time' ] - df.at[idx_df, 's2_left' ])
-    strArr2[idx_arr]['index_left']   = min(strArr2[idx_arr]['true_left'] , strArr2[idx_arr]['s2_left'] )
-    ##strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
-    strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
-    #strArr2[idx_arr]['image']        = arr2d_s2
-    #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
-            
+    assert(df is not None)
+    
+    idx_df = idx_arr 
+    
+    try:
+        strArr2[idx_arr]['true_left']    = df.at[idx_df, 't_first_electron_true']
+        strArr2[idx_arr]['true_right']   = df.at[idx_df, 't_last_photon_true']
+        strArr2[idx_arr]['true_nels']    = df.at[idx_df, 'n_electrons_true']
+        strArr2[idx_arr]['true_nphs']    = df.at[idx_df, 'n_photons_true']
+        strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+        strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']            
+        strArr2[idx_arr]['x_true']       = df.at[idx_df, 'x_true']
+        strArr2[idx_arr]['y_true']       = df.at[idx_df, 'y_true']
+        strArr2[idx_arr]['x_s2']         = df.at[idx_df, 's2_x']
+        strArr2[idx_arr]['y_s2']         = df.at[idx_df, 's2_y']
+        strArr2[idx_arr]['s2_left']      = df.at[idx_df, 's2_left']
+        strArr2[idx_arr]['s2_right']     = 2*(df.at[idx_df, 's2_center_time' ] - df.at[idx_df, 's2_left' ])
+        strArr2[idx_arr]['index_left']   = min(strArr2[idx_arr]['true_left'] , strArr2[idx_arr]['s2_left'] )
+        ##strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
+        strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
+        #strArr2[idx_arr]['image']        = arr2d_s2
+        #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
+    
+    except Exception as e:
+        print("Exception!")
+        print(e)
+        
     return
 
             
@@ -139,7 +148,7 @@ def process_dir(dir_in, dir_fmt, dir_out, isStrict):
         
         strArr = init_sarr(n_pkl*n_zip, 1000)
         
-        process_zip(zipfilename, isStrict)
+        process_zip(zipfilename, isStrict, strArr)
         
         f_out = dir_out + '/strArr_dir{0}'.format(i_dir)
         
@@ -161,7 +170,7 @@ def process_dir(dir_in, dir_fmt, dir_out, isStrict):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_zip(zipfilename, isStrict):
+def process_zip(zipfilename, isStrict, strArr):
     
     n_pkl_per_zip   = 1000
     n_zip           = 10
@@ -177,6 +186,12 @@ def process_zip(zipfilename, isStrict):
         df_pkl_merged = process_pkl(zipfilename, iPkl, isStrict)
         df_zip_merged = df_zip_merged.append(df_pkl_merged)
 
+        assert(df_pkl_merged is not None)
+        
+        print(df_pkl_merged.columns)
+        
+        fill_sarr(strArr, df_pkl_merged, iPkl)
+        
         continue
     
     df_zip_merged.reset_index(inplace=True, drop=True)
@@ -198,15 +213,38 @@ def process_pkl(zipfilename, ipklfile, isStrict):
     zfile         = zipfile.ZipFile(zipfilename)
     event         = pickle.loads(zlib.decompress(zfile.open(str(ipklfile)).read()))
 
-    process_evt(event, cfg, isStrict)
     
-    return
+    left  = 0
+    right = 0
+    
+    if (event.main_s2):
+        left  = event.main_s2.left
+        right = event.main_s2.right
+    else:
+        f   = '/dali/lgrandi/dbarge/data-xe1t/s2only/fax/0/sim_s2s_minitrees.hdf5'
+        dft = pd.read_hdf(f)
+        
+        s2_left   = dft.at[ipklfile, 's2_left']
+        s2_center = dft.at[ipklfile, 's2_center_time']
+        s2_width  = 2*(s2_center - s2_left)
+        s2_right = s2_left + s2_width    
+        
+        #left  = min(true_left , s2_left )
+        #right = min(max(true_right, s2_right)+1, window_left + n_samples_max)
+        
+        left  = s2_left
+        right = s2_right
+    
+    
+    df = process_evt(event, cfg, left, right, isStrict)
+    
+    return df
 
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_evt(event, cfg, isStrict=True, verbose=True):
+def process_evt(event, cfg, left, right, isStrict=True, verbose=True):
     
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
@@ -216,9 +254,9 @@ def process_evt(event, cfg, isStrict=True, verbose=True):
         
     #print("{0} interactions".format(nInteractions))
         
-    if (nInteractions < 1):
+    #if (nInteractions < 1):
         #print("   No interactions!")
-        return
+        #return
         
     #----------------------------------------------------------------------
     #----------------------------------------------------------------------
@@ -235,42 +273,40 @@ def process_evt(event, cfg, isStrict=True, verbose=True):
         
     
     #----------------------------------------------------------------------
-    # S2 Window
-    #----------------------------------------------------------------------
-    
-    left  = event.main_s2.left
-    right = event.main_s2.right
-
-    
-    #----------------------------------------------------------------------
-    # Get summed S2 waveform PAX from event
-    #----------------------------------------------------------------------
-    
-    arr_summed_waveform_top_evt = waveform_utils_summed.GetSummedWaveformFromEvent(event)
-    arr_summed_waveform_top_evt = arr_summed_waveform_top_evt[left:right]
-    
-
-    #----------------------------------------------------------------------
     # Get dataframe of S2 waveform for each PMT channel
     #----------------------------------------------------------------------
     
-    df_channels_waveforms_top     = waveform_utils_channels.getChannelsWaveformsDataFrame2(event, cfg, isStrict, False)
-    df_channels_waveforms_top_all = waveform_utils_channels.addEmptyChannelsToDataFrame(df_channels_waveforms_top)
+    df_channels_waveforms_top     = utils_waveform_channels.getChannelsWaveformsDataFrame(event, cfg, isStrict, False)
+    df_channels_waveforms_top_all = utils_waveform_channels.addEmptyChannelsToDataFrame(df_channels_waveforms_top)
     
     
     #----------------------------------------------------------------------
     # Get summed S2 waveform from dataframe
     #----------------------------------------------------------------------
     
-    arr_summed_waveform_top_df = waveform_utils_summed.getSummedWaveformFromDataFrame(df_channels_waveforms_top_all, event)
+    length = event.length()
+    arr_summed_waveform_top_df = utils_waveform_summed.getSummedWaveformFromDataFrame(df_channels_waveforms_top_all, length)
     arr_summed_waveform_top_df = arr_summed_waveform_top_df[left:right]
     
-     
+    
     #----------------------------------------------------------------------
-    # Check that the S2 summed waveform from the event and dataframe are equal
+    # Get summed S2 waveform PAX from event
     #----------------------------------------------------------------------
 
-    wf_arrs_equal = np.allclose(arr_summed_waveform_top_evt, arr_summed_waveform_top_df, atol=1e-1, rtol=1e-1)
+    wf_arrs_equal = False
+    summedInfo    = True
+    
+    if (summedInfo):
+        
+        arr_summed_waveform_top_evt = utils_waveform_summed.GetSummedWaveformFromEvent(event)
+        arr_summed_waveform_top_evt = arr_summed_waveform_top_evt[left:right]
+
+     
+        #------------------------------------------------------------------
+        # Check that the S2 summed waveform from the event and dataframe are equal
+        #------------------------------------------------------------------
+    
+        wf_arrs_equal = np.allclose(arr_summed_waveform_top_evt, arr_summed_waveform_top_df, atol=1e-1, rtol=1e-1)
 
 
     #----------------------------------------------------------------------
@@ -315,7 +351,7 @@ def process_evt(event, cfg, isStrict=True, verbose=True):
     #----------------------------------------------------------------------
     #----------------------------------------------------------------------
         
-    if (not wf_arrs_equal):
+    if (not wf_arrs_equal and summedInfo):
         print("Error! Summed waveform from dataframe & event not equal")
 
     if (not eq_wf_df_wf_ev):
@@ -431,11 +467,16 @@ def main():
     #import utils_fax.helpers_fax_truth
 
     df = utils_fax.nsToSamples(df, 's2_center_time')
-    df = utils_fax.nsToSamples(df, 't_first_electron_true')
-    df = utils_fax.nsToSamples(df, 't_last_electron_true')
-    df = utils_fax.nsToSamples(df, 't_first_photon_true')
-    df = utils_fax.nsToSamples(df, 't_last_photon_true')
-
+    
+    try:
+        df = utils_fax.nsToSamples(df, 't_first_electron_true')
+        df = utils_fax.nsToSamples(df, 't_last_electron_true')
+        df = utils_fax.nsToSamples(df, 't_first_photon_true')
+        df = utils_fax.nsToSamples(df, 't_last_photon_true')
+    except Exception as e:
+        print("Exception!")
+        print(e)
+        
     #dir_format = "instructions_" + ('[0-9]' * 6)
     dir_format = "sim_s2s"
         
