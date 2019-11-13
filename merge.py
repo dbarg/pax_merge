@@ -31,28 +31,29 @@ def init_sarr(nEvents, n_samples_max):
     sArr = np.zeros(
         nEvents,
         dtype=[
-            #('x_ins'       , np.float32), # Truth
-            #('y_ins'       , np.float32),
-            #('true_left'   , np.int32),
-            #('true_right'  , np.int32),
-            #('true_x'      , np.float32),
-            #('true_y'      , np.float32),
-            #('true_n_els'  , np.int32),
-            #('true_n_phs'  , np.int32),
-            #('left_index'  , np.int32),   # Reco
-            #('left'        , np.int32),
-            #('right'       , np.int32),
-            #('x'           , np.float32),
-            #('y'           , np.float32),
-            #('z'           , np.float32),
-            #('dt'          , np.float32),
-            ##('s2_truncated', np.int32),
-            #('s2_area'     , np.float32),
-            #('s2_areas'    , np.float16, 127),
+            ('x_ins'       , np.float32), # Truth
+            ('y_ins'       , np.float32),
+            ('true_left'   , np.int32),
+            ('true_right'  , np.int32),
+            ('true_x'      , np.float32),
+            ('true_y'      , np.float32),
+            ('true_n_els'  , np.int32),
+            ('true_n_phs'  , np.int32),
+            ('left_index'  , np.int32),   # Reco
+            ('left'        , np.int32),
+            ('right'       , np.int32),
+            ('x'           , np.float32),
+            ('y'           , np.float32),
+            ('z'           , np.float32),
+            ('dt'          , np.float32),
+            ('s2_area'     , np.float32),
+            ('s2_areas'    , np.float16, 127),
             ('image'       , np.float16, (127, n_samples_max) ),
+            #('s2_truncated', np.int32),
         ]
     )
 
+    return sArr
     
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
