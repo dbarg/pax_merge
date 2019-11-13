@@ -2,6 +2,7 @@ merged
 *.h5
 *.pkl
 *.png
+*.root
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
