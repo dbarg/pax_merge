@@ -152,8 +152,8 @@ class mergePax():
             if (i_pkl % 100 == 0):
                 print("      PKL File: {0}".format(i_pkl))
                 
-            if (i_glb % 100 == 0):
-                print("      i_glb: {0}".format(i_glb))
+            #if (i_glb % 100 == 0):
+            #    print("      i_glb: {0}".format(i_glb))
           
             if(i_glb % n_events_modulus == 0 and i_glb != 0):
                 print("   Save")

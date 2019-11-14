@@ -104,6 +104,8 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     else:
         arr_s2integrals_df = utils_waveform_summed.getS2IntegralsFromDataFrame(df_channels_waveforms_top)
 
+    assert(np.sum(arr_s2integrals_df) > 0)
+    
     arr_s2integrals_diff  = arr_s2integrals_evt - arr_s2integrals_df
     arr_s2integrals_equal = np.allclose(arr_s2integrals_diff, np.zeros(arr_s2integrals_diff.size))
     
@@ -115,13 +117,14 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     s2_sum_evt = np.sum(arr_s2integrals_evt)
 
     marg = 1e-1
-    eq_wf_df_wf_ev = np.isclose(sum_sum_diff, 0, atol=marg, rtol=marg)
-    eq_s2_ev_wf_ev = np.isclose(s2_sum_evt, wf_sum_evt, atol=marg, rtol=marg)
-    eq_s2_ev_wf_df = np.isclose(s2_sum_evt, wf_sum_df , atol=marg, rtol=marg)
-    eq_s2_df_wf_df = np.isclose(s2_sum_df , wf_sum_df , atol=marg, rtol=marg)
-    eq_s2_df_wf_ev = np.isclose(s2_sum_df , wf_sum_evt, atol=marg, rtol=marg)
     
-    if (not arr_s2integrals_equal and True):
+    eq_wf_df_wf_ev = np.isclose(sum_sum_diff,            0, atol=marg, rtol=marg)
+    eq_s2_ev_wf_ev = np.isclose(s2_sum_evt  , wf_sum_evt  , atol=marg, rtol=marg)
+    eq_s2_ev_wf_df = np.isclose(s2_sum_evt  , wf_sum_df   , atol=marg, rtol=marg)
+    eq_s2_df_wf_df = np.isclose(s2_sum_df   , wf_sum_df   , atol=marg, rtol=marg)
+    eq_s2_df_wf_ev = np.isclose(s2_sum_df   , wf_sum_evt  , atol=marg, rtol=marg)
+    
+    if (not arr_s2integrals_equal and False):
         
         xmin = np.abs(np.amin(arr_s2integrals_diff))
         xmax = np.abs(np.amax(arr_s2integrals_diff))
@@ -137,26 +140,29 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     
     #----------------------------------------------------------------------
     #----------------------------------------------------------------------
-        
+    
+    evt_s2_integrals_exist = False
+    
     if (not wf_arrs_equal and summedInfo):
         print("   Error! Summed waveform from dataframe & event not equal")
         print(np.amax(np.abs(wf_sum_diff)))
 
     if (not eq_wf_df_wf_ev and summedInfo):
-        print("   Error! Sum of summed waveform from dataframe & event not equal")
-        print(sum_sum_diff)
+        print("   Error! Sum of summed waveform from dataframe & event not equal.")
+        print("      max difference: {0:.1f}".format(sum_sum_diff))
         
     if (not eq_s2_df_wf_ev and summedInfo):
         print("   Error! Sum of summed waveform from event & summed S2s from dataframe not equal")
+        print(abs(wf_sum_evt - s2_sum_df))
         
-    if (not eq_s2_ev_wf_ev):
+    if (not eq_s2_ev_wf_ev and evt_s2_integrals_exist):
         print("   Error! Sum of summed waveform & summed S2s from event not equal")
 
     if (not eq_s2_ev_wf_df):
         print("   Error! Sum of summed waveform from dataframe & summed S2s from event not equal")
         
-    if (not eq_s2_df_wf_df):
-        print("   Error! Sum of summed waveform from dataframe & summed S2s from dataframe not equal")
+    #if (not eq_s2_df_wf_df):
+    #    print("   Error! Sum of summed waveform from dataframe & summed S2s from dataframe not equal")
 
     #assert(wf_arrs_equal)
     #assert(eq_wf_df_wf_ev)
