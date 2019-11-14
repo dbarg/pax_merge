@@ -20,19 +20,23 @@ from pax_utils import utils_waveform_summed
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_evt(event, cfg, left, right, i_zip, ipklfile, strArr, isStrict=True, verbose=True):
+def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStrict=True, verbose=True):
    
+    print("HERE")
+    
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
 
     interactions  = event.interactions
     nInteractions = len(interactions)
         
-    if (nInteractions < 1):
-        #df_channels_waveforms_top.to_pickle(file_out_s2_waveforms)
-        #print("   No interactions!")
+
+    if (nInteractions < n_intr):
+        print("   No interactions! Skipping...")
+        #return df_pkl, df_channels_waveforms_top        
         return
-        
+
+    
     #----------------------------------------------------------------------
     # Load Data
     #----------------------------------------------------------------------

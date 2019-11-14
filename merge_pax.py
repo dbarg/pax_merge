@@ -15,61 +15,11 @@ import zipfile
 import zlib
 
 from pax_utils import utils_event
+from utils_fax import helpers_fax_truth
 
 import merge_looper as looper
 import merge_process_event as process_event
 
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-def fill_sarr(strArr2, df, idx_arr):
-
-    return 
-
-    #df = utils_fax.nsToSamples(df, 't_first_electron_true')
-    #df = utils_fax.nsToSamples(df, 't_last_electron_true')
-    #df = utils_fax.nsToSamples(df, 't_first_photon_true')
-    #df = utils_fax.nsToSamples(df, 't_last_photon_true')
-    #df = utils_fax.nsToSamples(df, 's2_center_time')
-        
-        
-    #assert(df is not None)
-    #
-    #idx_df = idx_arr 
-    #
-    #try:
-    #    strArr2[idx_arr]['true_left']    = df.at[idx_df, 't_first_electron_true']
-    #    strArr2[idx_arr]['true_right']   = df.at[idx_df, 't_last_photon_true']
-    #    strArr2[idx_arr]['true_nels']    = df.at[idx_df, 'n_electrons_true']
-    #    strArr2[idx_arr]['true_nphs']    = df.at[idx_df, 'n_photons_true']
-    #    strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-    #    strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']            
-    #    strArr2[idx_arr]['x_true']       = df.at[idx_df, 'x_true']
-    #    strArr2[idx_arr]['y_true']       = df.at[idx_df, 'y_true']
-    #except Exception as e:
-    #    print("Exception Filling Truth!")
-    #    print(e)
-    #    
-    #try:
-    #    strArr2[idx_arr]['x_s2']         = df.at[idx_df, 's2_x']
-    #    strArr2[idx_arr]['y_s2']         = df.at[idx_df, 's2_y']
-    #    strArr2[idx_arr]['s2_left']      = df.at[idx_df, 's2_left']
-    #    strArr2[idx_arr]['s2_right']     = 2*(df.at[idx_df, 's2_center_time' ] - df.at[idx_df, 's2_left' ])
-    #    strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
-    #except Exception as e:
-    #    print("Exception Filling Reco!")
-    #    print(e)
-    #    
-#
-    #    #strArr2[idx_arr]['index_left']   = min(strArr2[idx_arr]['true_left'] , strArr2[idx_arr]['s2_left'] )
-    #    ##strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
-    #    #strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
-    #    #strArr2[idx_arr]['image']        = arr2d_s2
-    #    #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
-    #  
-    #    
-    #return
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -85,12 +35,13 @@ class mergePax():
         # Parse Arguments
         #--------------------------------------------------------------------------
     
-        args         = parse_arguments()
-        self.dir_out = args.dir_out
-        self.dir_in  = args.dir_in
-        self.dir_fmt = args.dir_fmt
-        self.zip_fmt = args.zip_fmt
-        self.n_intr  = args.n_intr
+        args          = parse_arguments()
+        self.dir_out  = args.dir_out
+        self.dir_in   = args.dir_in
+        self.dir_fmt  = args.dir_fmt
+        self.zip_fmt  = args.zip_fmt
+        self.n_intr   = args.n_intr
+        self.isStrict = args.isStrict
 
         
         #--------------------------------------------------------------------------
@@ -223,20 +174,71 @@ class mergePax():
                 
             else:
                 
-                s2_left   = event.s2_left
-                s2_center = dft.at[ipklfile, 's2_center_time']
-                s2_width  = 2*(s2_center - s2_left)
-                s2_right  = s2_left + s2_width    
-                
+                f_df_all = self.dir_in + '/data_new.hdf5'
+                df_all   = pd.read_hdf(f_df_all)
+
+                #idx = i_zip*n_pkl_per_zip + i_pkl
+                #f_df_mini = os.path.dirname(zipname.replace('/sim_s2s', '')) + '/sim_s2s_minitrees.hdf5'
+                #df_mini   = pd.read_hdf(f_df_mini)
+                #s2_left   = df_mini.at[idx, 's2_left']
+                #s2_center = df_mini.at[idx, 's2_center_time']
+
+                df_all = helpers_fax_truth.nsToSamples(df_all, 's2_left')
+                df_all = helpers_fax_truth.nsToSamples(df_all, 's2_center_time')
+                df_all = helpers_fax_truth.nsToSamples(df_all, 't_first_electron_true')
+                df_all = helpers_fax_truth.nsToSamples(df_all, 't_last_electron_true')
+                df_all = helpers_fax_truth.nsToSamples(df_all, 't_first_photon_true')
+                df_all = helpers_fax_truth.nsToSamples(df_all, 't_last_photon_true')
+
+                dur_evt    = df_all.at[i_glb, 'event_duration']
+                s2_left    = df_all.at[i_glb, 's2_left']
+                s2_center  = df_all.at[i_glb, 's2_center_time']
+                true_left  = df_all.at[i_glb, 't_first_electron_true']
+                true_right = df_all.at[i_glb, 't_last_photon_true']
+                true_nels  = df_all.at[i_glb, 'n_electrons_true']
+                true_nphs  = df_all.at[i_glb, 'n_photons_true']
+                true_width = true_right + 1 - true_left
+                s2_width   = 2*(s2_center - s2_left)
+                s2_right   = s2_left + s2_width    
+                window_left= min(true_left , s2_left )
+                #window_right = min(max(true_right, s2_right)+1, window_left + n_samples_max)
+                #window_width = window_right - window_left
+            
+                assert(event.duration() == dur_evt)
+            
                 left  = s2_left
                 right = s2_right
+                
 
+            assert(left >= 0 and right >= left)
+
+            print()
+            print("true left:  {0}".format(true_left))
+            print("true right: {0}".format(true_right))
+            print("true width: {0}".format(true_width))
+            print()
+            print("left:  {0}".format(s2_left))
+            print("right: {0}".format(s2_right))
+            print("width: {0}".format(s2_width))
+            print()
+                
                 
             #------------------------------------------------------------------
             #------------------------------------------------------------------
             
-            df_evt, df_chans = process_event.process_evt(event, cfg, left, right, i_zip, i_pkl, None, isStrict=True)
-            df_merged        = df_merged.append(df_evt)
+            df_evt, df_chans = process_event.process_evt(
+                event,
+                cfg,
+                left,
+                right,
+                i_zip,
+                i_pkl,
+                self.n_intr,
+                None,
+                isStrict=self.isStrict
+            )
+            
+            df_merged = df_merged.append(df_evt)
 
             
             #------------------------------------------------------------------
@@ -296,11 +298,12 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-dir_out', required=True)
-    parser.add_argument('-dir_in' , required=True)
-    parser.add_argument('-dir_fmt', required=True)
-    parser.add_argument('-zip_fmt', required=True)
-    parser.add_argument('-n_intr' , required=True, type=int)
+    parser.add_argument('-dir_out' , required=True)
+    parser.add_argument('-dir_in'  , required=True)
+    parser.add_argument('-dir_fmt' , required=True)
+    parser.add_argument('-zip_fmt' , required=True)
+    parser.add_argument('-n_intr'  , required=True, type=int)
+    parser.add_argument('-isStrict', required=True, default=True, type=lambda x: (str(x).lower() == 'true'))
 
     return parser.parse_args()
 
@@ -312,5 +315,59 @@ if (__name__ == "__main__"):
     
     mrg = mergePax()
     mrg.main()
+    
+    
+    
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+def fill_sarr(strArr2, df, idx_arr):
+
+    return 
+
+    #df = utils_fax.nsToSamples(df, 't_first_electron_true')
+    #df = utils_fax.nsToSamples(df, 't_last_electron_true')
+    #df = utils_fax.nsToSamples(df, 't_first_photon_true')
+    #df = utils_fax.nsToSamples(df, 't_last_photon_true')
+    #df = utils_fax.nsToSamples(df, 's2_center_time')
+        
+        
+    #assert(df is not None)
+    #
+    #idx_df = idx_arr 
+    #
+    #try:
+    #    strArr2[idx_arr]['true_left']    = df.at[idx_df, 't_first_electron_true']
+    #    strArr2[idx_arr]['true_right']   = df.at[idx_df, 't_last_photon_true']
+    #    strArr2[idx_arr]['true_nels']    = df.at[idx_df, 'n_electrons_true']
+    #    strArr2[idx_arr]['true_nphs']    = df.at[idx_df, 'n_photons_true']
+    #    strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+    #    strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']            
+    #    strArr2[idx_arr]['x_true']       = df.at[idx_df, 'x_true']
+    #    strArr2[idx_arr]['y_true']       = df.at[idx_df, 'y_true']
+    #except Exception as e:
+    #    print("Exception Filling Truth!")
+    #    print(e)
+    #    
+    #try:
+    #    strArr2[idx_arr]['x_s2']         = df.at[idx_df, 's2_x']
+    #    strArr2[idx_arr]['y_s2']         = df.at[idx_df, 's2_y']
+    #    strArr2[idx_arr]['s2_left']      = df.at[idx_df, 's2_left']
+    #    strArr2[idx_arr]['s2_right']     = 2*(df.at[idx_df, 's2_center_time' ] - df.at[idx_df, 's2_left' ])
+    #    strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
+    #except Exception as e:
+    #    print("Exception Filling Reco!")
+    #    print(e)
+    #    
+#
+    #    #strArr2[idx_arr]['index_left']   = min(strArr2[idx_arr]['true_left'] , strArr2[idx_arr]['s2_left'] )
+    #    ##strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
+    #    #strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
+    #    #strArr2[idx_arr]['image']        = arr2d_s2
+    #    #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
+    #  
+    #    
+    #return
+
     
   
