@@ -80,8 +80,49 @@ class mergePax():
     #--------------------------------------------------------------------------
     
     def __init__(self):
+
+        #--------------------------------------------------------------------------
+        # Parse Arguments
+        #--------------------------------------------------------------------------
+    
+        args         = parse_arguments()
+        self.dir_out = args.dir_out
+        self.dir_in  = args.dir_in
+        self.dir_fmt = args.dir_fmt
+        self.zip_fmt = args.zip_fmt
+        self.n_intr  = args.n_intr
+
         
-        self.n_intr = 0
+        #--------------------------------------------------------------------------
+        # Check output directory
+        #--------------------------------------------------------------------------
+        
+        p, d, files  = next(os.walk(self.dir_out))
+        n_in_out_dir = len(files)
+        
+        dir_in_exists  = os.path.isdir(self.dir_out)
+        dir_out_exists = os.path.isdir(self.dir_out)
+        dir_out_empty  = (n_in_out_dir == 0)
+      
+        if (not dir_in_exists):
+            print("Input directory '{0}' does not exist!".format(self.dir_in))
+            
+        if (not dir_out_exists):
+            print("Output directory '{0}' does not exist!".format(self.dir_out))
+            
+        if (not dir_out_empty):
+            print("Output directory '{0}' is not empty!".format(self.dir_out))
+            print(n_in_out_dir)
+            print(files)
+            
+        assert(dir_in_exists)
+        assert(dir_out_exists)
+        assert(dir_out_empty)
+    
+        
+        #--------------------------------------------------------------------------
+        #--------------------------------------------------------------------------
+
         return
         
 
@@ -213,12 +254,18 @@ class mergePax():
         #----------------------------------------------------------------------
             
         df_merged.reset_index(inplace=True, drop=True)
-        df_merged.to_pickle('df_merge.pkl')
             
-        #f_out = dir_out + '/strArr_dir{0}'.format(i_dir)
-        f_out = './strArr_dir{0}'.format(i_zip)
-        print("\nOutfile: {0}".format(f_out))
-        np.save(f_out, strArr)
+        f_out_strArr = self.dir_out + '/strArr_dir{0}'.format(i_zip)
+        f_out_df     = self.dir_out + '/df_merge_dir{0}'.format(i_zip)
+        
+        print()
+        print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out))
+        print()
+        print("\nSaving structured array (shape: {0}) to file: {1}".format(strArr.shape, f_out))
+        print()
+        
+        np.save(f_out_strArr, strArr)
+        df_merged.to_pickle(f_out_df)
         
 
         #----------------------------------------------------------------------
@@ -232,21 +279,12 @@ class mergePax():
     
     def main(self):
             
-        #--------------------------------------------------------------------------
-        # Parse Arguments
-        #--------------------------------------------------------------------------
-    
-        args        = parse_arguments()
-        dir_in      = args.dir_in
-        dir_fmt     = args.dir_fmt
-        zip_fmt     = args.zip_fmt
-        self.n_intr = args.n_intr
-        
-            
-        #--------------------------------------------------------------------------
-        #--------------------------------------------------------------------------
-            
-        looper.looper(dir_in, dir_fmt, zip_fmt, self.zip_callback_pax)
+        looper.looper(
+            self.dir_in,
+            self.dir_fmt,
+            self.zip_fmt,
+            self.zip_callback_pax
+        )
         
         return
 
@@ -257,6 +295,8 @@ class mergePax():
 def parse_arguments():
 
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument('-dir_out', required=True)
     parser.add_argument('-dir_in' , required=True)
     parser.add_argument('-dir_fmt', required=True)
     parser.add_argument('-zip_fmt', required=True)
