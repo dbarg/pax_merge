@@ -53,18 +53,16 @@ class mergePax():
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
-        for i_pkl, pkl in enumerate(zip_namelist):
+        for i_pkl, pklfilename in enumerate(zip_namelist):
            
             if (i_pkl % 100 == 0):
                 print("   PKL File: {0}".format(i_pkl))
 
-            event = pickle.loads(zlib.decompress(zfile.open(str(i_pkl)).read()))
-
-            continue
-            
+            pklfile = zfile.open(pklfilename)
+            event   = pickle.loads(zlib.decompress(pklfile.read()))
+    
             intrs = event.interactions
             nIntr = len(intrs)
-            
             
             if (nIntr < 1):
                 continue
@@ -76,14 +74,18 @@ class mergePax():
             right = -1
             
             if (event.main_s2):
-                
                 left  = event.main_s2.left
                 right = event.main_s2.right
-            
             else:
+                s2_left   = event.s2_left
+                s2_center = dft.at[ipklfile, 's2_center_time']
+                s2_width  = 2*(s2_center - s2_left)
+                s2_right  = s2_left + s2_width    
                 
-                left = event.s2_left
+                left  = s2_left
+                right = s2_right
 
+                
                 print()
                 
             #------------------------------------------------------------------
