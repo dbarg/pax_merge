@@ -80,13 +80,15 @@ class mergePax():
     #--------------------------------------------------------------------------
     
     def __init__(self):
+        
+        self.n_intr = 0
         return
         
 
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
     
-    def zip_callback_pax(self, zipname, i_dir, i_zip):
+    def zip_callback_pax(self, zipname, i_dir, i_zip, verbose=False):
         
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
@@ -126,33 +128,60 @@ class mergePax():
         )
         
         
+        n_events_modulus = 10000
+        
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
         for i_pkl, pklfilename in enumerate(zip_namelist):
-           
+               
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+
+            n_zip_per_dir = 10
+            i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
+
+            if (i_glb % 100 == 0):
+                print("   i_glb: {0}".format(i_glb))
+          
+            if(i_glb % n_events_modulus == 0 and i_glb != 0):
+                print("   Save")
+        
             if (i_pkl % 100 == 0):
                 print("   PKL File: {0}".format(i_pkl))
 
-            pklfile = zfile.open(pklfilename)
-            event   = pickle.loads(zlib.decompress(pklfile.read()))
-    
-            intrs = event.interactions
-            nIntr = len(intrs)
-            
-            if (nIntr < 1):
-                continue
         
             #------------------------------------------------------------------
+            #------------------------------------------------------------------
+            
+            pklfile = zfile.open(pklfilename)
+            event   = pickle.loads(zlib.decompress(pklfile.read()))
+            intrs   = event.interactions
+            nIntr   = len(intrs)
+            
+            
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+
+            if (nIntr < self.n_intr):
+                print("-> Global event number:{0}, interactions: {1}. Skipping...".format(i_glb, nIntr))
+                continue
+            
+            
+            #------------------------------------------------------------------
+            # Determine S2 Window
             #------------------------------------------------------------------
             
             left  = -1
             right = -1
             
             if (event.main_s2):
+                
                 left  = event.main_s2.left
                 right = event.main_s2.right
+                
             else:
+                
                 s2_left   = event.s2_left
                 s2_center = dft.at[ipklfile, 's2_center_time']
                 s2_width  = 2*(s2_center - s2_left)
@@ -162,14 +191,11 @@ class mergePax():
                 right = s2_right
 
                 
-                print()
-                
             #------------------------------------------------------------------
             #------------------------------------------------------------------
             
             df_evt, df_chans = process_event.process_evt(event, cfg, left, right, i_zip, i_pkl, None, isStrict=True)
-        
-            df_merged = df_merged.append(df_evt)
+            df_merged        = df_merged.append(df_evt)
 
             
             #------------------------------------------------------------------
@@ -210,10 +236,11 @@ class mergePax():
         # Parse Arguments
         #--------------------------------------------------------------------------
     
-        args    = parse_arguments()
-        dir_in  = args.dir_in
-        dir_fmt = args.dir_fmt
-        zip_fmt = args.zip_fmt
+        args        = parse_arguments()
+        dir_in      = args.dir_in
+        dir_fmt     = args.dir_fmt
+        zip_fmt     = args.zip_fmt
+        self.n_intr = args.n_intr
         
             
         #--------------------------------------------------------------------------
@@ -233,6 +260,7 @@ def parse_arguments():
     parser.add_argument('-dir_in' , required=True)
     parser.add_argument('-dir_fmt', required=True)
     parser.add_argument('-zip_fmt', required=True)
+    parser.add_argument('-n_intr' , required=True, type=int)
 
     return parser.parse_args()
 
