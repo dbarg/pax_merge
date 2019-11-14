@@ -3,6 +3,7 @@ merged
 *.pkl
 *.png
 *.root
+*.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
