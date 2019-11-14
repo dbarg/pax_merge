@@ -30,7 +30,8 @@ class mergePax():
     #--------------------------------------------------------------------------
     
     def __init__(self):
-
+  
+ 
         #--------------------------------------------------------------------------
         # Parse Arguments
         #--------------------------------------------------------------------------
@@ -70,7 +71,25 @@ class mergePax():
         assert(dir_out_exists)
         assert(dir_out_empty)
     
-        
+
+        #--------------------------------------------------------------------------
+        # Kludge
+        #--------------------------------------------------------------------------
+    
+        f_df_all = self.dir_in + '/data_new.hdf5'
+
+        self.df_all = pd.read_hdf(f_df_all)
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left')
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
+        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
+
+        print(self.df_all.at[0, 's2_left'])
+
+               
+            
         #--------------------------------------------------------------------------
         #--------------------------------------------------------------------------
 
@@ -174,37 +193,27 @@ class mergePax():
                 
             else:
                 
-                f_df_all = self.dir_in + '/data_new.hdf5'
-                df_all   = pd.read_hdf(f_df_all)
-
-                #idx = i_zip*n_pkl_per_zip + i_pkl
-                #f_df_mini = os.path.dirname(zipname.replace('/sim_s2s', '')) + '/sim_s2s_minitrees.hdf5'
-                #df_mini   = pd.read_hdf(f_df_mini)
-                #s2_left   = df_mini.at[idx, 's2_left']
-                #s2_center = df_mini.at[idx, 's2_center_time']
-
-                df_all = helpers_fax_truth.nsToSamples(df_all, 's2_left')
-                df_all = helpers_fax_truth.nsToSamples(df_all, 's2_center_time')
-                df_all = helpers_fax_truth.nsToSamples(df_all, 't_first_electron_true')
-                df_all = helpers_fax_truth.nsToSamples(df_all, 't_last_electron_true')
-                df_all = helpers_fax_truth.nsToSamples(df_all, 't_first_photon_true')
-                df_all = helpers_fax_truth.nsToSamples(df_all, 't_last_photon_true')
-
-                dur_evt    = df_all.at[i_glb, 'event_duration']
-                s2_left    = df_all.at[i_glb, 's2_left']
-                s2_center  = df_all.at[i_glb, 's2_center_time']
-                true_left  = df_all.at[i_glb, 't_first_electron_true']
-                true_right = df_all.at[i_glb, 't_last_photon_true']
-                true_nels  = df_all.at[i_glb, 'n_electrons_true']
-                true_nphs  = df_all.at[i_glb, 'n_photons_true']
-                true_width = true_right + 1 - true_left
+                true_left  = self.df_all.at[i_glb, 't_first_electron_true']
+                true_right = self.df_all.at[i_glb, 't_last_photon_true']
+                true_nels  = self.df_all.at[i_glb, 'n_electrons_true']
+                true_nphs  = self.df_all.at[i_glb, 'n_photons_true']
+                s2_left    = self.df_all.at[i_glb, 's2_left']
+                s2_center  = self.df_all.at[i_glb, 's2_center_time']
                 s2_width   = 2*(s2_center - s2_left)
-                s2_right   = s2_left + s2_width    
-                window_left= min(true_left , s2_left )
+                s2_right   = s2_left + s2_width   
+                
+                print(self.df_all.at[0, 's2_left'])
+                print(i_glb)
+                print(self.df_all.at[i_glb, 's2_left'])
+                
+ 
+
+                true_width  = true_right + 1 - true_left
+                window_left = min(true_left , s2_left )
                 #window_right = min(max(true_right, s2_right)+1, window_left + n_samples_max)
                 #window_width = window_right - window_left
             
-                assert(event.duration() == dur_evt)
+                assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
             
                 left  = s2_left
                 right = s2_right
@@ -213,6 +222,7 @@ class mergePax():
             assert(left >= 0 and right >= left)
 
             print()
+            print(i_glb)
             print("true left:  {0}".format(true_left))
             print("true right: {0}".format(true_right))
             print("true width: {0}".format(true_width))
