@@ -22,8 +22,6 @@ from pax_utils import utils_waveform_summed
 
 def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStrict=True, verbose=True):
    
-    print("HERE")
-    
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
 

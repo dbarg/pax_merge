@@ -43,7 +43,7 @@ class mergePax():
         self.zip_fmt  = args.zip_fmt
         self.n_intr   = args.n_intr
         self.isStrict = args.isStrict
-
+        self.n_samples_max = 1000
         
         #--------------------------------------------------------------------------
         # Check output directory
@@ -79,16 +79,13 @@ class mergePax():
         f_df_all = self.dir_in + '/data_new.hdf5'
 
         self.df_all = pd.read_hdf(f_df_all)
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left')
         self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
         self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
         self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
         self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
         self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
+        #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
 
-        print(self.df_all.at[0, 's2_left'])
-
-               
             
         #--------------------------------------------------------------------------
         #--------------------------------------------------------------------------
@@ -152,14 +149,15 @@ class mergePax():
             n_zip_per_dir = 10
             i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
 
+            if (i_pkl % 100 == 0):
+                print("      PKL File: {0}".format(i_pkl))
+                
             if (i_glb % 100 == 0):
-                print("   i_glb: {0}".format(i_glb))
+                print("      i_glb: {0}".format(i_glb))
           
             if(i_glb % n_events_modulus == 0 and i_glb != 0):
                 print("   Save")
         
-            if (i_pkl % 100 == 0):
-                print("   PKL File: {0}".format(i_pkl))
 
         
             #------------------------------------------------------------------
@@ -192,45 +190,41 @@ class mergePax():
                 right = event.main_s2.right
                 
             else:
-                
+
+                event = utils_event.getVerifiedEvent(event, verbose=False)
+
                 true_left  = self.df_all.at[i_glb, 't_first_electron_true']
                 true_right = self.df_all.at[i_glb, 't_last_photon_true']
                 true_nels  = self.df_all.at[i_glb, 'n_electrons_true']
                 true_nphs  = self.df_all.at[i_glb, 'n_photons_true']
+                true_width  = true_right + 1 - true_left
                 s2_left    = self.df_all.at[i_glb, 's2_left']
                 s2_center  = self.df_all.at[i_glb, 's2_center_time']
                 s2_width   = 2*(s2_center - s2_left)
                 s2_right   = s2_left + s2_width   
-                
-                print(self.df_all.at[0, 's2_left'])
-                print(i_glb)
-                print(self.df_all.at[i_glb, 's2_left'])
-                
- 
 
-                true_width  = true_right + 1 - true_left
                 window_left = min(true_left , s2_left )
-                #window_right = min(max(true_right, s2_right)+1, window_left + n_samples_max)
-                #window_width = window_right - window_left
+                window_right = min(max(true_right, s2_right)+1, window_left + self.n_samples_max)
+                window_width = window_right - window_left
             
                 assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
             
-                left  = s2_left
-                right = s2_right
+                left  = window_left
+                right = window_right
                 
 
             assert(left >= 0 and right >= left)
 
-            print()
-            print(i_glb)
-            print("true left:  {0}".format(true_left))
-            print("true right: {0}".format(true_right))
-            print("true width: {0}".format(true_width))
-            print()
-            print("left:  {0}".format(s2_left))
-            print("right: {0}".format(s2_right))
-            print("width: {0}".format(s2_width))
-            print()
+            #print()
+            #print(i_glb)
+            #print("true left:  {0}".format(true_left))
+            #print("true right: {0}".format(true_right))
+            #print("true width: {0}".format(true_width))
+            #print()
+            #print("left:  {0}".format(s2_left))
+            #print("right: {0}".format(s2_right))
+            #print("width: {0}".format(s2_width))
+            #print()
                 
                 
             #------------------------------------------------------------------
