@@ -76,16 +76,19 @@ class mergePax():
         # Kludge
         #--------------------------------------------------------------------------
     
-        f_df_all = self.dir_in + '/data_new.hdf5'
+        f_df_all   = self.dir_in + '/data_new.hdf5'
+        self.df_all = pd.DataFrame()
 
-        self.df_all = pd.read_hdf(f_df_all)
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
-        self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
-        #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
-
+        try:
+            self.df_all = pd.read_hdf(f_df_all)
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
+            #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
+        except Exception as ex:
+            print(ex)
             
         #--------------------------------------------------------------------------
         #--------------------------------------------------------------------------
