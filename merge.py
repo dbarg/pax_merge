@@ -28,7 +28,7 @@ from pax_utils import utils_waveform_summed
 
 def init_sarr(nEvents, n_samples_max):
     
-    sArr = np.zeros(
+    strArr = np.zeros(
         nEvents,
         dtype=[
             ('x_ins'       , np.float32), # Truth
@@ -53,8 +53,10 @@ def init_sarr(nEvents, n_samples_max):
         ]
     )
 
-    return sArr
+    return strArr
     
+
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -153,10 +155,13 @@ def main():
     lst_dir = lst_dir[0:2]
     n_dir   = len(lst_dir)
     nEventsPerFile = 1000
+    n_pkl  = 1000
+    n_zip  = 10
     nEvents        = nEventsPerFile*n_dir
     file_format    = 'XENON1T-0-000000000-000000999-000001000.zip'
+    strArr      = init_sarr(n_pkl*n_zip, 1000)
     
-    print("\n{0} directories (matching '{1}') files found in:".format(n_dir, dir_fmt))
+    print("\n{0} directories (matching '{1}') found in:".format(n_dir, dir_fmt))
     print("   {0}\n".format(dir_in))
 
     
@@ -189,41 +194,51 @@ def main():
     # Loop over input directories
     #--------------------------------------------------------------------------
     
-    print("Input directories:\n")
-    
     for i_dir, dirname in enumerate(lst_dir):
+
+        lst_zip = glob.glob(dirname + '/sim_s2s/XENON1T*.zip')
+        lst_zip.sort()
+        
+        print("\n{0} Files in input directory:  '{1}'\n".format(len(lst_zip), dirname))
     
-        print("{0}".format(dirname))
-    
-        #zipfilename = lst_dir[i_dir] + '/' + file_format
-        zipfilename = lst_dir[i_dir] + '/sim_s2s/' + file_format
-        zip_pkl     = dir_out + '/zip/' + 'zip%05d' % i_dir + '.pkl'
-    
-        if (not os.path.exists(zipfilename)):
+        
+        #--------------------------------------------------------------------------
+        # Loop over ZIP files
+        #--------------------------------------------------------------------------
+
+        for i_zip, zipfilename in enumerate(lst_zip):
             
-            print("Error! File: '" + str(zipfilename) + "' does not exist.")
+            zipfilename = lst_zip[i_zip]
+        
+            print("Input Zip File:  '{0}'".format(zipfilename))
+            
+            if (not os.path.exists(zipfilename)):
+            
+                print("      Error! File: '" + str(zipfilename) + "' does not exist.")
+        
+                continue
+        
+    
+            #----------------------------------------------------------------------
+            # Process ZIP File
+            #----------------------------------------------------------------------
+    
+            df_zip_merged = process_zip(i_zip, zipfilename, strArr, isStrict)
+            
+               
+            #------------------------------------------------------------------
+            # End loop on ZIP Files
+            #------------------------------------------------------------------
         
             continue
             
-        print("Input Zip File:  '" + zipfilename + "'")
-        #print("Output PKL File: '" + zip_pkl + "'")
-        
-
-        #----------------------------------------------------------------------
-        #----------------------------------------------------------------------
-
-        n_pkl  = 1000
-        n_zip  = 10
-        strArr = init_sarr(n_pkl*n_zip, 1000)
-        df_zip_merged = process_zip(zipfilename, isStrict, strArr)
-        
         
         #----------------------------------------------------------------------
         # Save
         #----------------------------------------------------------------------
-
+    
         f_out = dir_out + '/strArr_dir{0}'.format(i_dir)
-        print("Out: {0}".format(f_out))
+        print("\nOutfile: {0}".format(f_out))
         np.save(f_out, strArr)
         
         #df_zip_merged = processPklEvents(zipfilename, iZip, nEventsPerFileToProcess, dir_waveforms_s2)
@@ -231,9 +246,10 @@ def main():
         
         f_out_df = dir_out + '/df_merged_dir{0}.pkl'.format(i_dir)
         
-        df_zip_merged.to_pickle(f_out_df)
+        #df_zip_merged.to_pickle(f_out_df)
 
-        
+            
+            
         #----------------------------------------------------------------------
         # End loop on directories
         #----------------------------------------------------------------------
@@ -250,12 +266,13 @@ def main():
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_zip(zipfilename, isStrict, strArr):
+def process_zip(i_zip, zipfilename, strArr, isStrict):
     
-    #n_pkl_per_zip   = 1000
-    n_pkl_per_zip   = 1
-    #n_zip           = 10
-    n_zip           = 1
+    #n_pkl_per_zip   = 1
+    #n_zip           = 1
+
+    n_pkl_per_zip   = 1000
+    n_zip           = 10
     
     df_zip_merged   = pd.DataFrame()
     #df_s2_waveforms = pd.DataFrame()
@@ -264,15 +281,18 @@ def process_zip(zipfilename, isStrict, strArr):
     #--------------------------------------------------------------------------
     
     for iPkl in range(0, n_pkl_per_zip):
-    
-        df_pkl_merged = process_pkl(zipfilename, iPkl, isStrict)
+        
+        #idx_arr   = iZip*n_pkl + iPkl
+        #idx_df    = iDir*n_zip*n_pkl + iZip*n_pkl + iPkl
+            
+        df_pkl_merged = process_pkl(zipfilename, i_zip, iPkl, strArr, isStrict)
         df_zip_merged = df_zip_merged.append(df_pkl_merged)
 
         #assert(df_pkl_merged is not None)
         
         #print(df_pkl_merged.columns)
         
-        fill_sarr(strArr, df_pkl_merged, iPkl)
+        #fill_sarr(strArr, df_pkl_merged, iPkl)
         
         continue
     
@@ -289,7 +309,7 @@ def process_zip(zipfilename, isStrict, strArr):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_pkl(zipfilename, ipklfile, isStrict):
+def process_pkl(zipfilename, i_zip, ipklfile, strArr, isStrict):
     
     if (ipklfile % 100 == 0):
         print("   Processing PKL file: {0}".format(ipklfile) )
@@ -322,7 +342,7 @@ def process_pkl(zipfilename, ipklfile, isStrict):
         right = s2_right
     
     
-    df = process_evt(event, cfg, left, right, isStrict)
+    df = process_evt(event, cfg, left, right, ipklfile, strArr, isStrict)
     
     return df
 
@@ -330,8 +350,11 @@ def process_pkl(zipfilename, ipklfile, isStrict):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_evt(event, cfg, left, right, isStrict=True, verbose=True):
-    
+def process_evt(event, cfg, left, right, i_zip, ipklfile, strArr, isStrict=True, verbose=True):
+   
+    if (ipklfile % 100 == 0):
+        print("   Event: {0}".format(ipklfile) )
+        
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
 
@@ -371,6 +394,7 @@ def process_evt(event, cfg, left, right, isStrict=True, verbose=True):
         df_channels_waveforms_top_all, event.length())
     arr_summed_waveform_top_df = arr_summed_waveform_top_df[left:right]
     wf_sum_df                  = np.sum(arr_summed_waveform_top_df)
+    
     
     #----------------------------------------------------------------------
     # Get summed S2 waveform PAX from event
@@ -499,6 +523,20 @@ def process_evt(event, cfg, left, right, isStrict=True, verbose=True):
 
     
     #----------------------------------------------------------------------
+    # S2 Only
+    #----------------------------------------------------------------------
+
+    n_pkl                  = 1000
+    iZip                   = 0
+    idx_arr                = i_zip*n_pkl + ipklfile
+    df1                    = df_channels_waveforms_top
+    arr2d                  = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df1, 0, event.length())
+    arr_s2_areas           = utils_waveform_summed.getS2IntegralsFromDataFrame(df1)
+    strArr2[0]['image']    = arr2d_s2
+    strArr2[0]['s2_areas'] = arr_s2_areas
+    
+    
+    #----------------------------------------------------------------------
     # End loop on PKL files in ZIP File
     #----------------------------------------------------------------------
 
@@ -514,8 +552,9 @@ def parse_arguments():
     parser.add_argument('-dir_in'  , required=True)
     parser.add_argument('-dir_out' , required=True)
     parser.add_argument('-dir_fmt' , required=True)
-    parser.add_argument('-isStrict', default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('-max_dirs', required=True, type=int)
+    parser.add_argument('-isStrict', required=True, default=True, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('-isS2only', required=True, default=True, type=lambda x: (str(x).lower() == 'true'))
 
     return parser.parse_args()
 
