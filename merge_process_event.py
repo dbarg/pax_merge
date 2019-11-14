@@ -153,7 +153,7 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
         
     if (not eq_s2_df_wf_ev and summedInfo):
         print("   Error! Sum of summed waveform from event & summed S2s from dataframe not equal")
-        print(abs(wf_sum_evt - s2_sum_df))
+        print("      max difference: {0:.1f}".format(abs(wf_sum_evt - s2_sum_df)))
         
     if (not eq_s2_ev_wf_ev and evt_s2_integrals_exist):
         print("   Error! Sum of summed waveform & summed S2s from event not equal")
