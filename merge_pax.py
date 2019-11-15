@@ -154,7 +154,8 @@ class mergePax():
 
             n_zip_per_dir = 10
             i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
-            i_arr         = i_zip*n_pkl_per_zip + i_pkl
+            #i_arr         = i_zip*n_pkl_per_zip + i_pkl
+            i_arr         = i_pkl
 
             if (i_pkl % 10 == 0):
                 print("      PKL File: {0}".format(i_pkl))
@@ -310,9 +311,9 @@ class mergePax():
         f_out_df     = self.dir_out + '/df_merge_dir{0}'.format(i_zip)
         
         print()
-        print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out))
+        print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
         print()
-        print("\nSaving structured array (shape: {0}) to file: {1}".format(strArr.shape, f_out))
+        print("\nSaving structured array (shape: {0}) to file: {1}".format(strArr.shape, f_out_strArr))
         print()
         
         np.save(f_out_strArr, strArr)
@@ -361,9 +362,16 @@ def parse_arguments():
 #------------------------------------------------------------------------------
 
 if (__name__ == "__main__"):
+
+    t1 = time.time()
     
+    print("Starting...")
     mrg = mergePax()
     mrg.main()
+    
+    t2 = time.time()
+    
+    print("Done in {0:.1f}".format(t2-t1))
     
     
     
