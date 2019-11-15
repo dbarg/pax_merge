@@ -287,7 +287,7 @@ class mergePax():
             strArr[i_arr]['left']         = s2_left
             strArr[i_arr]['right']        = s2_right
             strArr[i_arr]['image']        = arr2d_s2
-            strArr[i_arr]['s2_areas']  = arr_s2_areas_arr_inwindow
+            #strArr[i_arr]['s2_areas']  = arr_s2_areas_arr_inwindow
             
             
             #------------------------------------------------------------------

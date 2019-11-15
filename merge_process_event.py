@@ -76,7 +76,6 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, isStrict, verb
     
     
     
-    
     #------------------------------------------------------------------
     # Sanity - Check Summed Waveform from the event & dataframe are equal
     #------------------------------------------------------------------
@@ -85,14 +84,21 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, isStrict, verb
     
     arr_diff_wf_evt_df = arr_summed_waveform_top_evt - arr_summed_waveform_top_df
     eq_wf_evt_df       = np.allclose(arr_diff_wf_evt_df, np.zeros(arr_diff_wf_evt_df.size), rtol=marg, atol=marg)
-    max_diff_wf_evt_df = np.amax(np.abs(arr_diff_wf_evt_df))
+    
+    max_diff_wf_evt_df = np.amax(arr_diff_wf_evt_df)
     
     if not (eq_wf_evt_df):
         print("   Summed Waveforms max diff: {0:.1f}".format(max_diff_wf_evt_df))
         
-    #assert(eq_wf_evt_df)
+    diff_wfsum_evt_df = wf_sum_evt - wf_sum_df
     
+    if (not np.isclose(diff_wfsum_evt_df, 0, rtol=marg, atol=marg)):
+        print("   Sum of Summed Waveforms diff: {0:.1f}".format(diff_wfsum_evt_df))    
+        print("   Sum of Waveform, evt:         {0:.1f}".format(wf_sum_evt))    
+        pct = diff_wfsum_evt_df/wf_sum_evt
+        print(pct)
         
+
     #----------------------------------------------------------------------
     # Check that the per-channel S2 integrals from the event and dataframe are equal
     #----------------------------------------------------------------------
@@ -133,4 +139,3 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, isStrict, verb
     #----------------------------------------------------------------------
 
     return df_pkl, df_channels_waveforms_top
-    #return df_pkl, df_channels_waveforms_top[left:right]
