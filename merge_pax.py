@@ -15,6 +15,10 @@ import zipfile
 import zlib
 
 from pax_utils import utils_event
+from pax_utils import utils_s2integrals
+from pax_utils import utils_interaction as interaction_utils
+from pax_utils import utils_waveform_channels
+from pax_utils import utils_waveform_summed
 from utils_fax import helpers_fax_truth
 
 import merge_looper as looper
@@ -31,19 +35,19 @@ class mergePax():
     
     def __init__(self):
   
- 
         #--------------------------------------------------------------------------
         # Parse Arguments
         #--------------------------------------------------------------------------
     
-        args          = parse_arguments()
-        self.dir_out  = args.dir_out
-        self.dir_in   = args.dir_in
-        self.dir_fmt  = args.dir_fmt
-        self.zip_fmt  = args.zip_fmt
-        self.n_intr   = args.n_intr
-        self.isStrict = args.isStrict
+        args               = parse_arguments()
+        self.dir_out       = args.dir_out
+        self.dir_in        = args.dir_in
+        self.dir_fmt       = args.dir_fmt
+        self.zip_fmt       = args.zip_fmt
+        self.n_intr        = args.n_intr
+        self.isStrict      = args.isStrict
         self.n_samples_max = 1000
+        
         
         #--------------------------------------------------------------------------
         # Check output directory
@@ -151,13 +155,11 @@ class mergePax():
 
             n_zip_per_dir = 10
             i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
+            i_arr         = i_zip*n_pkl_per_zip + i_pkl
 
             if (i_pkl % 100 == 0):
                 print("      PKL File: {0}".format(i_pkl))
                 
-            #if (i_glb % 100 == 0):
-            #    print("      i_glb: {0}".format(i_glb))
-          
             if(i_glb % n_events_modulus == 0 and i_glb != 0):
                 print("   Save")
         
@@ -171,10 +173,6 @@ class mergePax():
             intrs   = event.interactions
             nIntr   = len(intrs)
             
-            
-            #------------------------------------------------------------------
-            #------------------------------------------------------------------
-
             if (nIntr < self.n_intr):
                 print("-> Global event number:{0}, interactions: {1}. Skipping...".format(i_glb, nIntr))
                 continue
@@ -183,10 +181,19 @@ class mergePax():
             #------------------------------------------------------------------
             # Determine S2 Window
             #------------------------------------------------------------------
-            
+
+            x = np.nan
+            y = np.nan
+            true_x = np.nan
+            true_y = np.nan
+            true_left = -1
+            true_right = -1
             left  = -1
             right = -1
-            
+            window_left = -1
+            window_right = -1
+            window_width = -1
+
             if (event.main_s2):
                 
                 left  = event.main_s2.left
@@ -195,7 +202,10 @@ class mergePax():
             else:
 
                 event = utils_event.getVerifiedEvent(event, verbose=False)
-
+                x          = self.df_all.at[i_glb, 's2_x']
+                y          = self.df_all.at[i_glb, 's2_y']
+                true_x     = self.df_all.at[i_glb, 'x_true']
+                true_y     = self.df_all.at[i_glb, 'y_true']
                 true_left  = self.df_all.at[i_glb, 't_first_electron_true']
                 true_right = self.df_all.at[i_glb, 't_last_photon_true']
                 true_nels  = self.df_all.at[i_glb, 'n_electrons_true']
@@ -231,6 +241,7 @@ class mergePax():
                 
                 
             #------------------------------------------------------------------
+            # Is S2 areas in S2 window or all of time?
             #------------------------------------------------------------------
             
             df_evt, df_chans = process_event.process_evt(
@@ -247,6 +258,45 @@ class mergePax():
             
             df_merged = df_merged.append(df_evt)
 
+              
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+            
+            arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chans, 0, event.length())
+
+            arr2d_s2                    = np.zeros(shape=(127, self.n_samples_max))
+            arr2d_s2[:, 0:window_width] = arr2d[:, window_left:window_right]
+            #arr1d_s2                    = np.sum(arr2d_s2, axis=0)
+            #arr1d_sum                   = np.sum(arr1d_s2) 
+
+            df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
+            arr_s2_areas_evt_inwindow = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
+            arr_s2_areas_arr_inwindow = np.sum(arr2d_s2, axis=1)
+            diff                      = np.sum(arr_s2_areas_arr_inwindow) - np.sum(arr_s2_areas_evt_inwindow)
+
+            print(arr2d.shape)
+            print(s2_areas_inwindow.shape)
+            print(diff)
+            
+            
+            #strArr2[idx_arr]['true_nels']    = true_nels
+            #strArr2[idx_arr]['true_nphs']    = true_nphs
+            #strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+            #strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
+            #strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
+            #strArr2[idx_arr]['s2_area']      = s2_area
+            strArr[i_arr]['left_index']   = window_left
+            strArr[i_arr]['true_left']    = true_left
+            strArr[i_arr]['true_right']   = true_right
+            strArr[i_arr]['true_x']       = true_x
+            strArr[i_arr]['true_y']       = true_y
+            strArr[i_arr]['x']            = x
+            strArr[i_arr]['y']            = y
+            strArr[i_arr]['left']         = s2_left
+            strArr[i_arr]['right']        = s2_right
+            strArr[i_arr]['image']        = arr2d_s2
+            #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
+            
             
             #------------------------------------------------------------------
             # Save Waveform Dataframes

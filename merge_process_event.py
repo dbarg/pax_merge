@@ -20,7 +20,7 @@ from pax_utils import utils_waveform_summed
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStrict=True, verbose=True):
+def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStrict, verbose=True):
    
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
@@ -28,23 +28,21 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     interactions  = event.interactions
     nInteractions = len(interactions)
         
-
     if (nInteractions < n_intr):
         print("   No interactions! Skipping...")
         #return df_pkl, df_channels_waveforms_top        
         return
-
     
     #----------------------------------------------------------------------
     # Load Data
     #----------------------------------------------------------------------
 
-    df_pkl_event                  = utils_event.getEventDataFrameFromEvent(event)
-    df_pkl_intr                   = interaction_utils.getInteractionDataFrameFromEvent(event)
-    df_pkl_s2s                    = utils_s2integrals.getS2integralsDataFrame(event, 127)
-    df_pkl                        = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
-    df_pkl['event_number']        = event.event_number
-    df_channels_waveforms_top     = pd.DataFrame()
+    df_pkl_event              = utils_event.getEventDataFrameFromEvent(event)
+    df_pkl_intr               = interaction_utils.getInteractionDataFrameFromEvent(event)
+    df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
+    df_pkl                    = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
+    df_pkl['event_number']    = event.event_number
+    df_channels_waveforms_top = pd.DataFrame()
         
     
     #----------------------------------------------------------------------
@@ -53,15 +51,17 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     
     df_channels_waveforms_top     = utils_waveform_channels.getChannelsWaveformsDataFrame(event, cfg, isStrict, False)
     df_channels_waveforms_top_all = utils_waveform_channels.addEmptyChannelsToDataFrame(df_channels_waveforms_top)
+    #df_channels_waveforms_top     = df_channels_waveforms_top[left:right]
+    #df_channels_waveforms_top_all = df_channels_waveforms_top_all[left:right]
     
     
     #----------------------------------------------------------------------
     # Get summed S2 waveform from dataframe
     #----------------------------------------------------------------------
     
-    arr_summed_waveform_top_df = utils_waveform_summed.getSummedWaveformFromDataFrame(
-        df_channels_waveforms_top_all, event.length())
-    arr_summed_waveform_top_df = arr_summed_waveform_top_df[left:right]
+    length                     = event.length()
+    arr_summed_waveform_top_df = utils_waveform_summed.getSummedWaveformFromDataFrame(df_channels_waveforms_top_all, length)
+    #arr_summed_waveform_top_df = arr_summed_waveform_top_df[left:right]
     wf_sum_df                  = np.sum(arr_summed_waveform_top_df)
     
     
@@ -74,22 +74,19 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     wf_sum_diff   = None
     sum_sum_diff  = None
     s2_sum_diff   = None
-    summedInfo    = True
-    
-    if (summedInfo):
         
-        arr_summed_waveform_top_evt = utils_waveform_summed.GetSummedWaveformFromEvent(event)
-        arr_summed_waveform_top_evt = arr_summed_waveform_top_evt[left:right]
+    arr_summed_waveform_top_evt = utils_waveform_summed.GetSummedWaveformFromEvent(event)
+    #arr_summed_waveform_top_evt = arr_summed_waveform_top_evt[left:right]
 
-     
-        #------------------------------------------------------------------
-        # Check that the S2 summed waveform from the event and dataframe are equal
-        #------------------------------------------------------------------
+    
+    #------------------------------------------------------------------
+    # Check that the S2 summed waveform from the event and dataframe are equal
+    #------------------------------------------------------------------
 
-        wf_sum_diff   = arr_summed_waveform_top_evt - arr_summed_waveform_top_df
-        wf_arrs_equal = np.allclose(wf_sum_diff, np.zeros(arr_summed_waveform_top_evt.size), atol=1e-1, rtol=1e-1)
-        wf_sum_evt    = np.sum(arr_summed_waveform_top_evt)
-        sum_sum_diff  = abs(wf_sum_df - wf_sum_evt)
+    wf_sum_diff   = arr_summed_waveform_top_evt - arr_summed_waveform_top_df
+    wf_arrs_equal = np.allclose(wf_sum_diff, np.zeros(arr_summed_waveform_top_evt.size), atol=1e-1, rtol=1e-1)
+    wf_sum_evt    = np.sum(arr_summed_waveform_top_evt)
+    sum_sum_diff  = abs(wf_sum_df - wf_sum_evt)
 
         
     #----------------------------------------------------------------------
@@ -104,7 +101,12 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     else:
         arr_s2integrals_df = utils_waveform_summed.getS2IntegralsFromDataFrame(df_channels_waveforms_top)
 
-    assert(np.sum(arr_s2integrals_df) > 0)
+            
+    #print("arr_s2integrals_df:   {0}".format(np.sum(arr_s2integrals_df)))
+
+            
+    assert(np.sum(arr_s2integrals_df ) >= 0)
+    #assert(np.sum(arr_s2integrals_evt) > 0)
     
     arr_s2integrals_diff  = arr_s2integrals_evt - arr_s2integrals_df
     arr_s2integrals_equal = np.allclose(arr_s2integrals_diff, np.zeros(arr_s2integrals_diff.size))
@@ -146,6 +148,7 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     if (not wf_arrs_equal and summedInfo):
         print("   Error! Summed waveform from dataframe & event not equal")
         print("      max difference: {0:.1f}".format(np.amax(np.abs(wf_sum_diff))))
+        print("      df wf sum: {0:.1f}".format(wf_sum_df))
 
     if (not eq_wf_df_wf_ev and summedInfo):
         print("   Error! Sum of summed waveform from dataframe & event not equal.")
@@ -199,3 +202,4 @@ def process_evt(event, cfg, left, right, i_zip, ipklfile, n_intr, strArr, isStri
     #----------------------------------------------------------------------
 
     return df_pkl, df_channels_waveforms_top
+    #return df_pkl, df_channels_waveforms_top[left:right]
