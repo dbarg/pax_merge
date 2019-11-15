@@ -108,12 +108,13 @@ class mergePax():
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
-        jsonfilename  = os.path.dirname(zipname) + '/pax_info.json'
-        cfg           = utils_event.getConfig(jsonfilename)
-        zfile         = zipfile.ZipFile(zipname, 'r')
-        zip_namelist  = zfile.namelist()
-        n_pkl_per_zip = len(zip_namelist)
-        df_merged     = pd.DataFrame()
+        n_events_modulus = 10000
+        jsonfilename     = os.path.dirname(zipname) + '/pax_info.json'
+        cfg              = utils_event.getConfig(jsonfilename)
+        zfile            = zipfile.ZipFile(zipname, 'r')
+        zip_namelist     = zfile.namelist()
+        n_pkl_per_zip    = len(zip_namelist)
+        df_merged        = pd.DataFrame()
             
         assert(n_pkl_per_zip == 1000)
        
@@ -143,8 +144,6 @@ class mergePax():
         )
         
         
-        n_events_modulus = 10000
-        
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
@@ -157,14 +156,13 @@ class mergePax():
             i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
             i_arr         = i_zip*n_pkl_per_zip + i_pkl
 
-            if (i_pkl % 100 == 0):
+            if (i_pkl % 10 == 0):
                 print("      PKL File: {0}".format(i_pkl))
                 
             if(i_glb % n_events_modulus == 0 and i_glb != 0):
                 print("   Save")
         
 
-        
             #------------------------------------------------------------------
             #------------------------------------------------------------------
             
@@ -228,16 +226,6 @@ class mergePax():
 
             assert(left >= 0 and right >= left)
 
-            #print()
-            #print(i_glb)
-            #print("true left:  {0}".format(true_left))
-            #print("true right: {0}".format(true_right))
-            #print("true width: {0}".format(true_width))
-            #print()
-            #print("left:  {0}".format(s2_left))
-            #print("right: {0}".format(s2_right))
-            #print("width: {0}".format(s2_width))
-            #print()
                 
                 
             #------------------------------------------------------------------
@@ -252,9 +240,10 @@ class mergePax():
                 i_zip,
                 i_pkl,
                 self.n_intr,
-                None,
-                isStrict=self.isStrict
+                isStrict=self.isStrict,
+                verbose=True
             )
+            
             
             df_merged = df_merged.append(df_evt)
 
@@ -269,12 +258,12 @@ class mergePax():
             #arr1d_s2                    = np.sum(arr2d_s2, axis=0)
             #arr1d_sum                   = np.sum(arr1d_s2) 
 
-            df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
-            arr_s2_areas_evt_inwindow = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
-            arr_s2_areas_arr_inwindow = np.sum(arr2d_s2, axis=1)
-            sum1                      = np.sum(arr_s2_areas_arr_inwindow)
-            sum2                      = np.sum(arr_s2_areas_evt_inwindow)
-            diff2                     = sum2 - sum1
+            #df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
+            #arr_s2_areas_evt_inwindow = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
+            #arr_s2_areas_arr_inwindow = np.sum(arr2d_s2, axis=1)
+            #sum1                      = np.sum(arr_s2_areas_arr_inwindow)
+            #sum2                      = np.sum(arr_s2_areas_evt_inwindow)
+            #diff2                     = sum2 - sum1
 
             #print(arr2d_s2.shape)
             #print(sum1)
