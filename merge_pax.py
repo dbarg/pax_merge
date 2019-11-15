@@ -201,7 +201,7 @@ class mergePax():
                 
             else:
 
-                event = utils_event.getVerifiedEvent(event, verbose=False)
+                event      = utils_event.getVerifiedEvent(event, verbose=False)
                 x          = self.df_all.at[i_glb, 's2_x']
                 y          = self.df_all.at[i_glb, 's2_y']
                 true_x     = self.df_all.at[i_glb, 'x_true']
@@ -210,7 +210,7 @@ class mergePax():
                 true_right = self.df_all.at[i_glb, 't_last_photon_true']
                 true_nels  = self.df_all.at[i_glb, 'n_electrons_true']
                 true_nphs  = self.df_all.at[i_glb, 'n_photons_true']
-                true_width  = true_right + 1 - true_left
+                true_width = true_right + 1 - true_left
                 s2_left    = self.df_all.at[i_glb, 's2_left']
                 s2_center  = self.df_all.at[i_glb, 's2_center_time']
                 s2_width   = 2*(s2_center - s2_left)
@@ -272,19 +272,22 @@ class mergePax():
             df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
             arr_s2_areas_evt_inwindow = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
             arr_s2_areas_arr_inwindow = np.sum(arr2d_s2, axis=1)
-            diff                      = np.sum(arr_s2_areas_arr_inwindow) - np.sum(arr_s2_areas_evt_inwindow)
+            sum1                      = np.sum(arr_s2_areas_arr_inwindow)
+            sum2                      = np.sum(arr_s2_areas_evt_inwindow)
+            diff2                     = sum2 - sum1
 
-            print(arr2d.shape)
-            print(s2_areas_inwindow.shape)
-            print(diff)
+            #print(arr2d_s2.shape)
+            #print(sum1)
+            #print(sum2)
+            #print(diff2)
             
             
-            #strArr2[idx_arr]['true_nels']    = true_nels
-            #strArr2[idx_arr]['true_nphs']    = true_nphs
-            #strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-            #strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
-            #strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
-            #strArr2[idx_arr]['s2_area']      = s2_area
+            #strArr[i_arr]['true_nels']    = true_nels
+            #strArr[i_arr]['true_nphs']    = true_nphs
+            #strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+            #strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
+            #strArr[i_arr]['s2_truncated'] = num_s2_samples_truncated
+            #strArr[i_arr]['s2_area']      = s2_area
             strArr[i_arr]['left_index']   = window_left
             strArr[i_arr]['true_left']    = true_left
             strArr[i_arr]['true_right']   = true_right
@@ -295,7 +298,7 @@ class mergePax():
             strArr[i_arr]['left']         = s2_left
             strArr[i_arr]['right']        = s2_right
             strArr[i_arr]['image']        = arr2d_s2
-            #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
+            strArr[i_arr]['s2_areas']  = arr_s2_areas_arr_inwindow
             
             
             #------------------------------------------------------------------
@@ -375,56 +378,3 @@ if (__name__ == "__main__"):
     
     
     
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-def fill_sarr(strArr2, df, idx_arr):
-
-    return 
-
-    #df = utils_fax.nsToSamples(df, 't_first_electron_true')
-    #df = utils_fax.nsToSamples(df, 't_last_electron_true')
-    #df = utils_fax.nsToSamples(df, 't_first_photon_true')
-    #df = utils_fax.nsToSamples(df, 't_last_photon_true')
-    #df = utils_fax.nsToSamples(df, 's2_center_time')
-        
-        
-    #assert(df is not None)
-    #
-    #idx_df = idx_arr 
-    #
-    #try:
-    #    strArr2[idx_arr]['true_left']    = df.at[idx_df, 't_first_electron_true']
-    #    strArr2[idx_arr]['true_right']   = df.at[idx_df, 't_last_photon_true']
-    #    strArr2[idx_arr]['true_nels']    = df.at[idx_df, 'n_electrons_true']
-    #    strArr2[idx_arr]['true_nphs']    = df.at[idx_df, 'n_photons_true']
-    #    strArr2[idx_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-    #    strArr2[idx_arr]['y_ins']        = df.at[idx_df, 'y_ins']            
-    #    strArr2[idx_arr]['x_true']       = df.at[idx_df, 'x_true']
-    #    strArr2[idx_arr]['y_true']       = df.at[idx_df, 'y_true']
-    #except Exception as e:
-    #    print("Exception Filling Truth!")
-    #    print(e)
-    #    
-    #try:
-    #    strArr2[idx_arr]['x_s2']         = df.at[idx_df, 's2_x']
-    #    strArr2[idx_arr]['y_s2']         = df.at[idx_df, 's2_y']
-    #    strArr2[idx_arr]['s2_left']      = df.at[idx_df, 's2_left']
-    #    strArr2[idx_arr]['s2_right']     = 2*(df.at[idx_df, 's2_center_time' ] - df.at[idx_df, 's2_left' ])
-    #    strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
-    #except Exception as e:
-    #    print("Exception Filling Reco!")
-    #    print(e)
-    #    
-#
-    #    #strArr2[idx_arr]['index_left']   = min(strArr2[idx_arr]['true_left'] , strArr2[idx_arr]['s2_left'] )
-    #    ##strArr2[idx_arr]['s2_truncated'] = num_s2_samples_truncated
-    #    #strArr2[idx_arr]['s2_area']      = df.at[idx_df, 's2_area']
-    #    #strArr2[idx_arr]['image']        = arr2d_s2
-    #    #strArr2[idx_arr]['s2_areas']     = arr_s2_areas
-    #  
-    #    
-    #return
-
-    
-  
