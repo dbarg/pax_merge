@@ -139,7 +139,9 @@ class mergePax():
                 ('s2_area'     , np.float32),
                 ('s2_areas'    , np.float16, 127),
                 ('image'       , np.float16, (127, 1000) ),
-                #('s2_truncated', np.int32),
+                ('s2_n_truncated', np.int32),
+                ('s2_area_truncated', np.float32),
+                
             ]
         )
         
@@ -276,7 +278,7 @@ class mergePax():
             #strArr[i_arr]['true_nphs']    = true_nphs
             #strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
             #strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
-            #strArr[i_arr]['s2_truncated'] = num_s2_samples_truncated
+            #strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
             #strArr[i_arr]['s2_area']      = s2_area
             strArr[i_arr]['left_index']   = window_left
             strArr[i_arr]['true_left']    = true_left
