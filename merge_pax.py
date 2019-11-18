@@ -245,11 +245,13 @@ class mergePax():
             
             arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
             arr2d_s2                         = np.zeros(shape=(127, self.n_samples_max))
+            idx_max                          = min(self.window_right, self.window_left+self.n_samples_max)
+            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
             
-            if (self.window_width <= self.n_samples_max):
-                arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
-            else:
-                arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
+            #if (self.window_width <= self.n_samples_max):
+            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
+            #else:
+            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
                 
                 
             self.fill_strArr(i_arr, arr2d_s2, arr_s2areas_evt)
