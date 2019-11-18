@@ -45,20 +45,14 @@ class mergePax():
         self.zip_fmt       = args.zip_fmt
         self.n_intr        = args.n_intr
         self.isStrict      = args.isStrict
-        self.n_samples_max = 1000
+
+        #----------------------------------------------------------------------
+        #----------------------------------------------------------------------
         
-        self.x            = np.nan
-        self.y            = np.nan
-        self.true_x       = np.nan
-        self.true_y       = np.nan
-        self.true_left    = np.nan
-        self.true_right   = np.nan
-        self.left         = np.nan
-        self.right        = np.nan
-        self.width        = np.nan
-        self.window_left  = np.nan
-        self.window_right = np.nan
-        self.window_width = np.nan
+        self.n_samples_max = 1000
+        self.n_pkl_per_zip = 1000
+        
+        self.init_data(self.n_pkl_per_zip, n_channels=127, n_samples=1000)
             
         
         #----------------------------------------------------------------------
@@ -89,24 +83,6 @@ class mergePax():
     
 
         #----------------------------------------------------------------------
-        # Kludge
-        #----------------------------------------------------------------------
-    
-        f_df_all   = self.dir_in + '/data_new.hdf5'
-        self.df_all = pd.DataFrame()
-
-        try:
-            self.df_all = pd.read_hdf(f_df_all)
-            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
-            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
-            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
-            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
-            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
-            #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
-        except Exception as ex:
-            print(ex)
-            
-        #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
         return
@@ -130,33 +106,6 @@ class mergePax():
             
         assert(n_pkl_per_zip == 1000)
        
-        strArr = np.zeros(
-            n_pkl_per_zip,
-            dtype=[
-                ('x_ins'       , np.float32), # Truth
-                ('y_ins'       , np.float32),
-                ('true_left'   , np.int32),
-                ('true_right'  , np.int32),
-                ('true_x'      , np.float32),
-                ('true_y'      , np.float32),
-                ('true_n_els'  , np.int32),
-                ('true_n_phs'  , np.int32),
-                ('left_index'  , np.int32),   # Reco
-                ('left'        , np.int32),
-                ('right'       , np.int32),
-                ('x'           , np.float32),
-                ('y'           , np.float32),
-                ('z'           , np.float32),
-                ('dt'          , np.float32),
-                ('s2_area'     , np.float32),
-                ('s2_areas'    , np.float16, 127),
-                ('image'       , np.float16, (127, 1000) ),
-                ('s2_n_truncated', np.int32),
-                ('s2_area_truncated', np.float32),
-                
-            ]
-        )
-        
         
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
@@ -235,9 +184,6 @@ class mergePax():
             assert(self.left >= 0 and self.right >= self.left)
 
 
-          
-            
-            
             #------------------------------------------------------------------
             # Load Data
             #------------------------------------------------------------------
@@ -288,10 +234,10 @@ class mergePax():
             # To Do: Check s2 areas from df
             #------------------------------------------------------------------
             
-            marg = 1e-3
+            marg = 1e-1
             
-            assert(np.isclose(wf_sum_evt, sum_s2_areas_evt, atol=marg, rtol=marg))
-            assert(np.isclose(wf_sum_evt, wf_sum_df       , atol=marg, rtol=marg))
+            assert(np.isclose(wf_sum_evt         , sum_s2_areas_evt , atol=marg, rtol=marg))
+            assert(np.isclose(wf_sum_evt         , wf_sum_df        , atol=marg, rtol=marg))
             assert(np.allclose(arr_sum_wf_top_evt, arr_sum_wf_top_df, atol=marg, rtol=marg))
             
 
@@ -300,39 +246,18 @@ class mergePax():
             
             df_merged = df_merged.append(df_pkl_event)
                 
-
-            
-            
                 
             #------------------------------------------------------------------
             #------------------------------------------------------------------
             
             arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
-
             arr2d_s2                         = np.zeros(shape=(127, self.n_samples_max))
             arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
             #arr1d_s2                    = np.sum(arr2d_s2, axis=0)
             #arr1d_sum                   = np.sum(arr1d_s2) 
 
-            
-            #strArr[i_arr]['true_nels']    = true_nels
-            #strArr[i_arr]['true_nphs']    = true_nphs
-            #strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-            #strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
-            #strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
-            #strArr[i_arr]['s2_area']      = s2_area
-            strArr[i_arr]['left_index']   = self.window_left
-            #strArr[i_arr]['true_left']    = self.true_left
-            #strArr[i_arr]['true_right']   = self.true_right
-            #strArr[i_arr]['true_x']       = self.true_x
-            #strArr[i_arr]['true_y']       = self.true_y
-            strArr[i_arr]['x']            = self.x
-            strArr[i_arr]['y']            = self.y
-            strArr[i_arr]['left']         = self.left
-            strArr[i_arr]['right']        = self.right
-            strArr[i_arr]['image']        = arr2d_s2
-            #strArr[i_arr]['s2_areas']  = arr_s2_areas_arr_inwindow
-            
+            self.fill_strArr(i_arr, arr2d_s2, arr_s2areas_evt)
+
             
             #------------------------------------------------------------------
             # Save Waveform Dataframes
@@ -369,18 +294,110 @@ class mergePax():
         
         return
 
-   
+    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    
+    def fill_strArr(self, i_arr, arr2d_s2, arr_s2areas_evt):
+        
+        #self.strArr[i_arr]['true_nels']    = true_nels
+        #self.strArr[i_arr]['true_nphs']    = true_nphs
+        #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+        #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
+        #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
+        #self.strArr[i_arr]['s2_area']      = s2_area
+        #self.strArr[i_arr]['true_left']    = self.true_left
+        #self.strArr[i_arr]['true_right']   = self.true_right
+        #self.strArr[i_arr]['true_x']       = self.true_x
+        #self.strArr[i_arr]['true_y']       = self.true_y
+        self.strArr[i_arr]['x']            = self.x
+        self.strArr[i_arr]['y']            = self.y
+        self.strArr[i_arr]['left']         = self.left
+        self.strArr[i_arr]['right']        = self.right
+        self.strArr[i_arr]['left_index']   = self.window_left
+        self.strArr[i_arr]['image']        = arr2d_s2
+        self.strArr[i_arr]['s2_areas']     = arr_s2areas_evt
+        
+        return
+    
+        
+    #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    
+    def init_data(self, n_rows, n_channels=127, n_samples=1000):
+        
+        self.x            = np.nan
+        self.y            = np.nan
+        self.true_x       = np.nan
+        self.true_y       = np.nan
+        self.true_left    = np.nan
+        self.true_right   = np.nan
+        self.left         = np.nan
+        self.right        = np.nan
+        self.width        = np.nan
+        self.window_left  = np.nan
+        self.window_right = np.nan
+        self.window_width = np.nan
+
+        self.strArr = np.zeros(
+            n_rows,
+            dtype=[
+                ('x_ins'       , np.float32), # Truth
+                ('y_ins'       , np.float32),
+                ('true_left'   , np.int32),
+                ('true_right'  , np.int32),
+                ('true_x'      , np.float32),
+                ('true_y'      , np.float32),
+                ('true_n_els'  , np.int32),
+                ('true_n_phs'  , np.int32),
+                ('left_index'  , np.int32),   # Reco
+                ('left'        , np.int32),
+                ('right'       , np.int32),
+                ('x'           , np.float32),
+                ('y'           , np.float32),
+                ('z'           , np.float32),
+                ('dt'          , np.float32),
+                ('s2_area'     , np.float32),
+                ('s2_areas'    , np.float16, n_channels),
+                ('image'       , np.float16, (n_channels, n_samples) ),
+                ('s2_n_truncated', np.int32),
+                ('s2_area_truncated', np.float32),
+                
+            ]
+        )
+        
+        
+        #----------------------------------------------------------------------
+        # Kludge
+        #----------------------------------------------------------------------
+    
+        f_df_all   = self.dir_in + '/data_new.hdf5'
+        self.df_all = pd.DataFrame()
+
+        try:
+            self.df_all = pd.read_hdf(f_df_all)
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
+            self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
+            #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
+        except Exception as ex:
+            print(ex)
+            
+
+        #----------------------------------------------------------------------
+        #----------------------------------------------------------------------
+    
+        return
+        
+        
+        
     #------------------------------------------------------------------------------
     #------------------------------------------------------------------------------
     
     def main(self):
             
-        looper.looper(
-            self.dir_in,
-            self.dir_fmt,
-            self.zip_fmt,
-            self.zip_callback_pax
-        )
+        looper.looper(self.dir_in, self.dir_fmt, self.zip_fmt, self.zip_callback_pax)
         
         return
 
