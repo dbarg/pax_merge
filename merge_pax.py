@@ -254,10 +254,6 @@ class mergePax():
                 
             self.fill_strArr(i_arr, arr2d_s2, arr_s2areas_evt)
             
-            #print("\n")
-            #print(arr2d.shape)
-            #print(arr2d_s2.shape)
-            
             
             #------------------------------------------------------------------
             # Save Waveform Dataframes
@@ -288,7 +284,7 @@ class mergePax():
         print()
         
         np.save(f_out_strArr, self.strArr)
-        df_merged.to_pickle(f_out_df)
+        #df_merged.to_pickle(f_out_df)
         
 
         #----------------------------------------------------------------------
