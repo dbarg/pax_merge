@@ -33,7 +33,11 @@ class mergePax():
     #--------------------------------------------------------------------------
     
     def __init__(self):
+
+        #self.n_zip_per_dir = 10 # S2 only
+        self.n_zip_per_dir = 1
   
+
         #----------------------------------------------------------------------
         # Parse Arguments
         #----------------------------------------------------------------------
@@ -45,7 +49,9 @@ class mergePax():
         self.zip_fmt       = args.zip_fmt
         self.n_intr        = args.n_intr
         self.isStrict      = args.isStrict
-
+        self.idx_arr       = 0
+        self.idx_out       = 0
+        
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
         
@@ -96,7 +102,7 @@ class mergePax():
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
 
-        n_events_modulus = 10000
+        n_events_modulus = 1000
         jsonfilename     = os.path.dirname(zipname) + '/pax_info.json'
         cfg              = utils_event.getConfig(jsonfilename)
         zfile            = zipfile.ZipFile(zipname, 'r')
@@ -115,30 +121,22 @@ class mergePax():
             #------------------------------------------------------------------
             #------------------------------------------------------------------
 
-            n_zip_per_dir = 10
-            i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
+            i_glb         = i_dir*self.n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
             i_arr         = i_pkl
+            pklfile       = zfile.open(pklfilename)
+            event         = pickle.loads(zlib.decompress(pklfile.read()))
+            intrs         = event.interactions
+            nIntr         = len(intrs)
 
-            if (i_pkl % 10 == 0):
-                print("      PKL File: {0}".format(i_pkl))
-                
-            if(i_glb % n_events_modulus == 0 and i_glb != 0):
-                print("   Save")
-        
-
-            #------------------------------------------------------------------
-            #------------------------------------------------------------------
-            
-            pklfile = zfile.open(pklfilename)
-            event   = pickle.loads(zlib.decompress(pklfile.read()))
-            intrs   = event.interactions
-            nIntr   = len(intrs)
+            if (i_pkl % 100 == 0):
+                print("      PKL File {0}: {1}".format(i_pkl, pklfilename))
             
             if (nIntr < self.n_intr):
-                print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
+                if (verbose):
+                    print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
                 continue
-            
-            
+
+                
             #------------------------------------------------------------------
             # Determine S2 Window
             #------------------------------------------------------------------
@@ -245,7 +243,7 @@ class mergePax():
             
             arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
             arr2d_s2                         = np.zeros(shape=(127, self.n_samples_max))
-            idx_max                          = min(self.window_right, self.window_left+self.n_samples_max)
+            idx_max                          = min(self.window_right, self.window_left + self.n_samples_max)
             arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
             
             #if (self.window_width <= self.n_samples_max):
@@ -253,8 +251,40 @@ class mergePax():
             #else:
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
                 
+
+             
+            #arr_s2sumwf = np.sum(arr2d_s2, axis=0)
+            #arr_s2areas = np.sum(arr2d_s2, axis=1)
+            
+            
+   
+        
+            #------------------------------------------------------------------
+            # Save Waveform Dataframes
+            #------------------------------------------------------------------
+
+            if(self.idx_out % n_events_modulus == 0 and self.idx_out != 0):
+            
+                f_idx = int(self.idx_out-1/n_events_modulus)
+            
+                print("\n*** --- *** ---\n")
+                print(i_glb)
+                print(self.idx_arr)
+                print(self.idx_out)
+                print(f_idx)
+                self.idx_arr = 0
                 
-            self.fill_strArr(i_arr, arr2d_s2, arr_s2areas_evt)
+                f_out_strArr = self.dir_out + '/strArr{0}'.format(f_idx)
+                
+                print("\nSaving structured array (shape: {0}) to file: {1}".format(self.strArr.shape, f_out_strArr))
+                np.save(f_out_strArr, self.strArr)
+        
+            
+            self.fill_strArr(self.idx_arr, arr2d_s2, arr_s2areas_evt)
+            
+            self.idx_arr += 1
+            self.idx_out += 1
+
             
             
             #------------------------------------------------------------------
@@ -273,21 +303,14 @@ class mergePax():
         #----------------------------------------------------------------------
         # Save
         #----------------------------------------------------------------------
-            
-        df_merged.reset_index(inplace=True, drop=True)
-            
-        f_out_strArr = self.dir_out + '/strArr_dir{0}'.format(i_zip)
-        f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
-        
-        print()
-        print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
-        print()
-        print("\nSaving structured array (shape: {0}) to file: {1}".format(self.strArr.shape, f_out_strArr))
-        print()
-        
-        np.save(f_out_strArr, self.strArr)
+
+        #print()
+        #print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
+        #f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
+        #df_merged.reset_index(inplace=True, drop=True)
         #df_merged.to_pickle(f_out_df)
-        
+            
+
 
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
@@ -391,7 +414,6 @@ class mergePax():
         return
         
         
-        
     #------------------------------------------------------------------------------
     #------------------------------------------------------------------------------
     
@@ -423,13 +445,12 @@ def parse_arguments():
 #------------------------------------------------------------------------------
 
 if (__name__ == "__main__"):
-
-    t1 = time.time()
     
     print("Starting...")
+
+    t1 = time.time()
     mrg = mergePax()
     mrg.main()
-    
     t2 = time.time()
     
     print("Done in {0:.1f}".format(t2-t1))
