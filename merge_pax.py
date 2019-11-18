@@ -127,9 +127,11 @@ class mergePax():
             event         = pickle.loads(zlib.decompress(pklfile.read()))
             intrs         = event.interactions
             nIntr         = len(intrs)
-
+            #faxfile       = zipname.replace('.zip', '')
+            
             if (i_pkl % 100 == 0):
                 print("      PKL File {0}: {1}".format(i_pkl, pklfilename))
+                print()
             
             if (nIntr < self.n_intr):
                 if (verbose):
@@ -251,12 +253,6 @@ class mergePax():
             #else:
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
                 
-
-             
-            #arr_s2sumwf = np.sum(arr2d_s2, axis=0)
-            #arr_s2areas = np.sum(arr2d_s2, axis=1)
-            
-            
    
         
             #------------------------------------------------------------------
@@ -265,26 +261,21 @@ class mergePax():
 
             if(self.idx_out % n_events_modulus == 0 and self.idx_out != 0):
             
-                f_idx = int(self.idx_out-1/n_events_modulus)
-            
-                print("\n*** --- *** ---\n")
-                print(i_glb)
-                print(self.idx_arr)
-                print(self.idx_out)
-                print(f_idx)
-                self.idx_arr = 0
+                f_idx = int(self.idx_out/n_events_modulus) - 1
                 
-                f_out_strArr = self.dir_out + '/strArr{0}'.format(f_idx)
+                assert(f_idx >= 0)
                 
                 print("\nSaving structured array (shape: {0}) to file: {1}".format(self.strArr.shape, f_out_strArr))
+                print("\n idx_glb={0}, idx_out={1}, idx_arr={2}".format(i_glb, self.idx_arr, self.idx_out))
+
+                f_out_strArr = self.dir_out + '/strArr{0}'.format(f_idx)
+                self.idx_arr = 0
                 np.save(f_out_strArr, self.strArr)
         
             
             self.fill_strArr(self.idx_arr, arr2d_s2, arr_s2areas_evt)
-            
             self.idx_arr += 1
             self.idx_out += 1
-
             
             
             #------------------------------------------------------------------
