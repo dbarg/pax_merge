@@ -117,7 +117,6 @@ class mergePax():
 
             n_zip_per_dir = 10
             i_glb         = i_dir*n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
-            #i_arr         = i_zip*n_pkl_per_zip + i_pkl
             i_arr         = i_pkl
 
             if (i_pkl % 10 == 0):
@@ -138,8 +137,6 @@ class mergePax():
             if (nIntr < self.n_intr):
                 print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
                 continue
-            #else:
-            #    print("-> Global event number:{0}, interactions: {1}.".format(i_glb, nIntr))
             
             
             #------------------------------------------------------------------
@@ -188,11 +185,11 @@ class mergePax():
             # Load Data
             #------------------------------------------------------------------
         
-            df_pkl_event              = utils_event.getEventDataFrameFromEvent(event)
-            df_pkl_intr               = interaction_utils.getInteractionDataFrameFromEvent(event)
-            df_pkl_s2s                = utils_s2integrals.getS2integralsDataFrame(event, 127)
-            df_pkl                    = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
-            df_pkl['event_number']    = event.event_number
+            df_pkl_event           = utils_event.getEventDataFrameFromEvent(event)
+            df_pkl_intr            = interaction_utils.getInteractionDataFrameFromEvent(event)
+            df_pkl_s2s             = utils_s2integrals.getS2integralsDataFrame(event, 127)
+            df_pkl                 = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
+            df_pkl['event_number'] = event.event_number
 
                         
             #----------------------------------------------------------------------
@@ -232,6 +229,7 @@ class mergePax():
             #------------------------------------------------------------------
             # Sanity - Check Summed Waveform from the event & dataframe are equal
             # To Do: Check s2 areas from df
+            # To Do: Deal with truncated data
             #------------------------------------------------------------------
             
             marg = 1e-1
@@ -242,26 +240,30 @@ class mergePax():
             
 
             #------------------------------------------------------------------
-            #------------------------------------------------------------------
-            
-            df_merged = df_merged.append(df_pkl_event)
-                
-                
-            #------------------------------------------------------------------
+            # Truncate to fixed S2 Width
             #------------------------------------------------------------------
             
             arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
             arr2d_s2                         = np.zeros(shape=(127, self.n_samples_max))
-            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
-            #arr1d_s2                    = np.sum(arr2d_s2, axis=0)
-            #arr1d_sum                   = np.sum(arr1d_s2) 
-
+            
+            if (self.window_width <= self.n_samples_max):
+                arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
+            else:
+                arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
+                
+                
             self.fill_strArr(i_arr, arr2d_s2, arr_s2areas_evt)
-
+            
+            #print("\n")
+            #print(arr2d.shape)
+            #print(arr2d_s2.shape)
+            
             
             #------------------------------------------------------------------
             # Save Waveform Dataframes
             #------------------------------------------------------------------
+            
+            df_merged = df_merged.append(df_pkl_event)
             
             if (False):
                 file_out_s2_waveforms = 's2s/event{0:07d}_S2waveforms.pkl'.format(event.event_number)
@@ -277,15 +279,15 @@ class mergePax():
         df_merged.reset_index(inplace=True, drop=True)
             
         f_out_strArr = self.dir_out + '/strArr_dir{0}'.format(i_zip)
-        f_out_df     = self.dir_out + '/df_merge_dir{0}'.format(i_zip)
+        f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
         
         print()
         print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
         print()
-        print("\nSaving structured array (shape: {0}) to file: {1}".format(strArr.shape, f_out_strArr))
+        print("\nSaving structured array (shape: {0}) to file: {1}".format(self.strArr.shape, f_out_strArr))
         print()
         
-        np.save(f_out_strArr, strArr)
+        np.save(f_out_strArr, self.strArr)
         df_merged.to_pickle(f_out_df)
         
 
@@ -303,8 +305,6 @@ class mergePax():
         #self.strArr[i_arr]['true_nphs']    = true_nphs
         #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
-        #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
-        #self.strArr[i_arr]['s2_area']      = s2_area
         #self.strArr[i_arr]['true_left']    = self.true_left
         #self.strArr[i_arr]['true_right']   = self.true_right
         #self.strArr[i_arr]['true_x']       = self.true_x
@@ -313,6 +313,8 @@ class mergePax():
         self.strArr[i_arr]['y']            = self.y
         self.strArr[i_arr]['left']         = self.left
         self.strArr[i_arr]['right']        = self.right
+        #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
+        #self.strArr[i_arr]['s2_area']      = s2_area
         self.strArr[i_arr]['left_index']   = self.window_left
         self.strArr[i_arr]['image']        = arr2d_s2
         self.strArr[i_arr]['s2_areas']     = arr_s2areas_evt
