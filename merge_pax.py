@@ -212,6 +212,8 @@ class mergePax():
                 self.x            = pax_nn.x
                 self.y            = pax_nn.y
                 self.z            = pax_nn.z
+                self.event        = event.event_number
+                self.duration     = event.duration
                 
             else:
                 
@@ -371,7 +373,7 @@ class mergePax():
                 print("\n idx_glb={0}, idx_out={1}, idx_arr={2}".format(i_glb, self.idx_arr, self.idx_out))
 
                 self.idx_arr = 0
-                np.save(f_out_strArr, self.strArr)
+                np.savez(f_out_strArr, self.strArr)
             
             self.fill_strArr(self.idx_arr, arr2d_s2, arr_s2areas_evt)
             self.idx_arr += 1
@@ -422,7 +424,7 @@ class mergePax():
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']  
         
         self.strArr[i_arr]['event']          = self.event
-        self.strArr[i_arr]['duration']       = self.duration
+        self.strArr[i_arr]['duration']       = self.duration()
         self.strArr[i_arr]['true_nels']      = self.true_nels
         self.strArr[i_arr]['true_nphs']      = self.true_nphs
         self.strArr[i_arr]['true_left']      = self.true_left
@@ -471,7 +473,7 @@ class mergePax():
         self.strArr = np.zeros(
             n_rows,
             dtype=[
-                ('event'       , np.float32),
+                ('event'       , np.int32),
                 ('duration'    , np.float32),
                 ('x_ins'       , np.float32), # Truth
                 ('y_ins'       , np.float32),
