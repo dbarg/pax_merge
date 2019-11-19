@@ -10,8 +10,8 @@
 #SBATCH --mem=16GB
 #SBATCH --time=8:00:00
 
-#SBATCH --output=log.txt
-#SBATCH --error=log.txt
+#SBATCH --output=log_s2.txt
+#SBATCH --error=log_s2.txt
 
 cd ${HOME}/dali/xe1t-processing/pax_merge
 source ~/.bash/.setup_pax_head.sh

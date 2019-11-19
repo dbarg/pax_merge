@@ -168,8 +168,8 @@ class mergePax():
                     
             except Exception as ex:
                 
-                print("Exception!")
-                print(ex)
+                if (verbose):
+                    print("      Exception! Could not load FAX data file:\n         {0}".format(ex))
             
             
             #------------------------------------------------------------------
@@ -197,28 +197,33 @@ class mergePax():
                 self.window_right = self.right
                 self.window_width = self.width
                 
-            #else:
-                #print("Using data from: '{0}'...".format(f_df_all))
-                #event      = utils_event.getVerifiedEvent(event, verbose=False)
-                #x          = self.df_all.at[i_glb, 's2_x']
-                #y          = self.df_all.at[i_glb, 's2_y']
-                #true_x     = self.df_all.at[i_glb, 'x_true']
-                #true_y     = self.df_all.at[i_glb, 'y_true']
-                #true_left  = self.df_all.at[i_glb, 't_first_electron_true']
-                #true_right = self.df_all.at[i_glb, 't_last_photon_true']
-                #true_nels  = self.df_all.at[i_glb, 'n_electrons_true']
-                #true_nphs  = self.df_all.at[i_glb, 'n_photons_true']
-                #true_width = true_right + 1 - true_left
-                #s2_left    = self.df_all.at[i_glb, 's2_left']
-                #s2_center  = self.df_all.at[i_glb, 's2_center_time']
-                #s2_width   = 2*(s2_center - s2_left)
-                #s2_right   = s2_left + s2_width   
-                #window_left = min(true_left , s2_left )
-                #window_right = min(max(true_right, s2_right)+1, window_left + self.n_samples_max)
-                #window_width = window_right - window_left
-                #assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
-                #left  = window_left
-                #right = window_right
+            else:
+                
+                if (verbose):
+                    print("      Using data from: '{0}'...".format(self.f_df_all))
+                
+                event             = utils_event.getVerifiedEvent(event, verbose=False)
+                self.x            = self.df_all.at[i_glb, 's2_x']
+                self.y            = self.df_all.at[i_glb, 's2_y']
+                self.true_x       = self.df_all.at[i_glb, 'x_true']
+                self.true_y       = self.df_all.at[i_glb, 'y_true']
+                self.true_left    = self.df_all.at[i_glb, 't_first_electron_true']
+                self.true_right   = self.df_all.at[i_glb, 't_last_photon_true']
+                self.true_nels    = self.df_all.at[i_glb, 'n_electrons_true']
+                self.true_nphs    = self.df_all.at[i_glb, 'n_photons_true']
+                self.true_width   = self.true_right - self.true_left
+                self.s2_left      = self.df_all.at[i_glb, 's2_left']
+                self.s2_center    = self.df_all.at[i_glb, 's2_center_time']
+                self.s2_width     = 2*(self.s2_center - self.s2_left)
+                self.s2_right     = self.s2_left + self.s2_width   
+                self.window_left  = min(self.true_left, self.s2_left )
+                self.window_right = min(max(self.true_right, self.s2_right) + 1, self.window_left + self.n_samples_max)
+                self.window_width = self.window_right - self.window_left
+                
+                assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
+
+                self.left  = self.window_left
+                self.right = self.window_right
                 
 
             assert(self.left >= 0 and self.right >= self.left)
@@ -275,9 +280,30 @@ class mergePax():
             
             marg = 1e-1
             
-            assert(np.isclose(wf_sum_evt         , sum_s2_areas_evt , atol=marg, rtol=marg))
-            assert(np.isclose(wf_sum_evt         , wf_sum_df        , atol=marg, rtol=marg))
-            assert(np.allclose(arr_sum_wf_top_evt, arr_sum_wf_top_df, atol=marg, rtol=marg))
+            diff1     = wf_sum_evt - wf_sum_df   
+            arr_diff2 = arr_sum_wf_top_evt - arr_sum_wf_top_df
+            
+            eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
+            eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
+
+            #assert(eq1)
+            if not (eq1):
+                print(wf_sum_evt)
+                print(wf_sum_df)   
+                print(diff1)
+                assert(diff1/wf_sum_df  < 1e-1)
+                assert(diff1/wf_sum_evt < 1e-1)
+                
+            if not (eq2):
+                print(np.amin(arr_diff2))
+                print(np.amax(arr_diff2))
+                print(wf_sum_evt)
+                print(wf_sum_df)
+
+            assert(eq2)
+            
+            if (event.main_s2):
+                assert(np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg))
             
 
             #------------------------------------------------------------------
@@ -432,18 +458,21 @@ class mergePax():
         #----------------------------------------------------------------------
         # Kludge
         #----------------------------------------------------------------------
-    
-        f_df_all   = self.dir_in + '/data_new.hdf5'
-        self.df_all = pd.DataFrame()
-
+        
         try:
-            self.df_all = pd.read_hdf(f_df_all)
+
+            self.f_df_all = self.dir_in + '/data_new.hdf5'
+            self.df_all   = pd.DataFrame()
+
+            assert(os.path.exists(self.f_df_all))
+            
+            self.df_all = pd.read_hdf(self.f_df_all)
             self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_center_time')
             self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_electron_true')
             self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_electron_true')
             self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_first_photon_true')
             self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 't_last_photon_true')
-            #self.df_all = helpers_fax_truth.nsToSamples(self.df_all, 's2_left') # This is already in sample units
+            
         except Exception as ex:
             print(ex)
             
