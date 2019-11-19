@@ -189,13 +189,29 @@ class mergePax():
             #------------------------------------------------------------------
             
             if (event.main_s2):
+
+                pax_nn   = [x for x in event.main_s2.reconstructed_positions if x.algorithm == 'PosRecNeuralNet']
+                pax_tpf  = [x for x in event.main_s2.reconstructed_positions if x.algorithm == 'PosRecTopPatternFit']
+                pax_tpff = [x for x in event.main_s2.reconstructed_positions if x.algorithm == 'PosRecTopPatternFunctionFit']
                 
+                assert(len(pax_nn)   == 1)
+                assert(len(pax_tpf)  == 1)
+                assert(len(pax_tpff) == 1)
+                    
+                pax_nn = pax_nn[0]
+                    
                 self.left         = event.main_s2.left
                 self.right        = event.main_s2.right
+                self.s2_area      = event.main_s2.area
+                self.s2_aft       = event.main_s2.area_fraction_top
+                self.s2_area_top  = self.s2_aft*self.s2_area
                 self.width        = self.right - self.left
                 self.window_left  = self.left
                 self.window_right = self.right
                 self.window_width = self.width
+                self.x            = pax_nn.x
+                self.y            = pax_nn.y
+                self.z            = pax_nn.z
                 
             else:
                 
@@ -203,6 +219,7 @@ class mergePax():
                     print("      Using data from: '{0}'...".format(self.f_df_all))
                 
                 event             = utils_event.getVerifiedEvent(event, verbose=False)
+                
                 self.x            = self.df_all.at[i_glb, 's2_x']
                 self.y            = self.df_all.at[i_glb, 's2_y']
                 self.true_x       = self.df_all.at[i_glb, 'x_true']
@@ -272,6 +289,19 @@ class mergePax():
             #    print("Total Sum, Df:  {0:.1f}".format(wf_sum_df))
 
             
+            
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+            
+            #print()
+            #print("S2 Area:         {0:.1f}".format(self.s2_area))
+            #print("S2 AFT:          {0:.1f}".format(self.s2_aft))
+            #print("S2 Area Top:     {0:.1f}".format(self.s2_area_top))
+            #print("Summed S2 Areas: {0:.1f}".format(sum_s2_areas_evt))
+            
+
+            
+            
             #------------------------------------------------------------------
             # Sanity - Check Summed Waveform from the event & dataframe are equal
             # To Do: Check s2 areas from df
@@ -281,19 +311,20 @@ class mergePax():
             marg = 1e-1
             
             diff1     = wf_sum_evt - wf_sum_df   
+            pct       = max(diff1/wf_sum_df, diff1/wf_sum_evt)
             arr_diff2 = arr_sum_wf_top_evt - arr_sum_wf_top_df
             
             eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
 
             if not (eq1):
-                print()
-                print("NOT eq21")
-                print(wf_sum_evt)
-                print(wf_sum_df)   
-                print(diff1)
-                assert(diff1/wf_sum_df  < 1e-1)
-                assert(diff1/wf_sum_evt < 1e-1)
+                
+                if (pct > 0.01):
+                    print("\n-> Sum of Summed waveform unequal for evt:{0} & df: {1}. Diff: {2}, Pct: {3}\n".format(
+                        wf_sum_evt, wf_sum_df, diff1, pct))
+                          
+            assert(pct < 1e-1)
+            assert(np.isclose(self.s2_area_top, sum_s2_areas_evt, atol=marg, rtol=marg))
                 
             if not (eq2):
                 print()
@@ -369,14 +400,12 @@ class mergePax():
         # Save
         #----------------------------------------------------------------------
 
-        #if (False):
+        f_out_df = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
         
-            #print()
-            #print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
-            #f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
-            #df_merged.reset_index(inplace=True, drop=True)
-            #df_merged.to_pickle(f_out_df)
-            
+        print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
+        
+        df_merged.reset_index(inplace=True, drop=True)
+        df_merged.to_pickle(f_out_df)
 
 
         #----------------------------------------------------------------------
@@ -391,21 +420,27 @@ class mergePax():
 
         #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']  
-        self.strArr[i_arr]['true_nels']    = self.true_nels
-        self.strArr[i_arr]['true_nphs']    = self.true_nphs
-        self.strArr[i_arr]['true_left']    = self.true_left
-        self.strArr[i_arr]['true_right']   = self.true_right
-        self.strArr[i_arr]['true_x']       = self.true_x
-        self.strArr[i_arr]['true_y']       = self.true_y
-        self.strArr[i_arr]['x']            = self.x
-        self.strArr[i_arr]['y']            = self.y
-        self.strArr[i_arr]['left']         = self.left
-        self.strArr[i_arr]['right']        = self.right
+        
+        self.strArr[i_arr]['event']          = self.event
+        self.strArr[i_arr]['duration']       = self.duration
+        self.strArr[i_arr]['true_nels']      = self.true_nels
+        self.strArr[i_arr]['true_nphs']      = self.true_nphs
+        self.strArr[i_arr]['true_left']      = self.true_left
+        self.strArr[i_arr]['true_right']     = self.true_right
+        self.strArr[i_arr]['true_x']         = self.true_x
+        self.strArr[i_arr]['true_y']         = self.true_y
+        self.strArr[i_arr]['x']              = self.x
+        self.strArr[i_arr]['y']              = self.y
+        self.strArr[i_arr]['left']           = self.left
+        self.strArr[i_arr]['right']          = self.right
+        self.strArr[i_arr]['left_index']     = self.window_left
+        self.strArr[i_arr]['image']          = arr2d_s2.astype(np.float16)
+        self.strArr[i_arr]['s2_areas']       = arr_s2areas_evt
+        self.strArr[i_arr]['s2_area']        = self.s2_area
+        self.strArr[i_arr]['s2_aft']         = self.s2_aft
+        self.strArr[i_arr]['s2_area_top']    = self.s2_area_top
+        
         #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
-        #self.strArr[i_arr]['s2_area']      = s2_area
-        self.strArr[i_arr]['left_index']   = self.window_left
-        self.strArr[i_arr]['image']        = arr2d_s2.astype(np.float16)
-        self.strArr[i_arr]['s2_areas']     = arr_s2areas_evt
         
         return
     
@@ -415,6 +450,8 @@ class mergePax():
     
     def init_data(self, n_rows, n_channels=127, n_samples=1000):
         
+        self.event        = np.nan
+        self.duration     = np.nan
         self.x            = np.nan
         self.y            = np.nan
         self.true_x       = np.nan
@@ -434,6 +471,8 @@ class mergePax():
         self.strArr = np.zeros(
             n_rows,
             dtype=[
+                ('event'       , np.float32),
+                ('duration'    , np.float32),
                 ('x_ins'       , np.float32), # Truth
                 ('y_ins'       , np.float32),
                 ('true_left'   , np.int32),
@@ -450,6 +489,8 @@ class mergePax():
                 ('z'           , np.float32),
                 ('dt'          , np.float32),
                 ('s2_area'     , np.float32),
+                ('s2_area_top' , np.float32),
+                ('s2_aft'      , np.float32),
                 ('s2_areas'    , np.float16, n_channels),
                 ('image'       , np.float16, (n_channels, n_samples) ),
                 ('s2_n_truncated', np.int32),
