@@ -9,6 +9,7 @@ import os
 import pandas as pd
 import pickle
 import pprint
+import re
 import sys
 import time
 import zipfile
@@ -109,6 +110,8 @@ class mergePax():
         zip_namelist     = zfile.namelist()
         n_pkl_per_zip    = len(zip_namelist)
         df_merged        = pd.DataFrame()
+        faxfile          = re.sub(r'/zip/.*', '', os.path.abspath(zipname))
+        faxfile          += '/fax_truth/fax_truth_{0:05d}.csv'.format(i_dir)
             
         assert(n_pkl_per_zip == 1000)
        
@@ -127,18 +130,54 @@ class mergePax():
             event         = pickle.loads(zlib.decompress(pklfile.read()))
             intrs         = event.interactions
             nIntr         = len(intrs)
-            #faxfile       = zipname.replace('.zip', '')
+            
+
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+
+            df_fax = None
+            
+            try:
+                
+                df_fax = pd.read_csv(faxfile)
+                df_fax = df_fax[df_fax['event']     == i_pkl]
+                df_fax = df_fax[df_fax['peak_type'] == 's2' ]
+
+                df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_first_electron')
+                df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_last_electron')
+                df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_first_photon')
+                df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_last_photon')
+                
+                assert(df_fax.shape[0] == 1)
+                
+                df_fax = df_fax.iloc[0,:]
+
+                self.true_x     = df_fax.loc['x']
+                self.true_y     = df_fax.loc['y']
+                self.true_z     = df_fax.loc['z']
+                self.true_left  = df_fax.loc['t_first_photon']
+                self.true_right = df_fax.loc['t_last_photon']
+                self.true_nels  = df_fax.loc['n_electrons']
+                self.true_nphs  = df_fax.loc['n_photons']
+                self.true_width = self.true_right - self.true_left
+            
+            except Exception as ex:
+                print("Exception!")
+                print(ex)
+            
+            
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
             
             if (i_pkl % 100 == 0):
                 print("      PKL File {0}: {1}".format(i_pkl, pklfilename))
-                print()
             
             if (nIntr < self.n_intr):
                 if (verbose):
                     print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
                 continue
 
-                
+
             #------------------------------------------------------------------
             # Determine S2 Window
             #------------------------------------------------------------------
@@ -218,12 +257,10 @@ class mergePax():
 
             #------------------------------------------------------------------
             #------------------------------------------------------------------
-
-            if (False):
-                print()
-                print("Total Sum, Evt: {0:.1f}".format(wf_sum_evt))
-                print("Total Sum, S2s: {0:.1f}".format(sum_s2_areas_evt))
-                print("Total Sum, Df:  {0:.1f}".format(wf_sum_df))
+            #if (False):
+            #    print("Total Sum, Evt: {0:.1f}".format(wf_sum_evt))
+            #    print("Total Sum, S2s: {0:.1f}".format(sum_s2_areas_evt))
+            #    print("Total Sum, Df:  {0:.1f}".format(wf_sum_df))
 
             
             #------------------------------------------------------------------
@@ -253,25 +290,23 @@ class mergePax():
             #else:
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
                 
-   
-        
+                
             #------------------------------------------------------------------
             # Save Waveform Dataframes
             #------------------------------------------------------------------
 
             if(self.idx_out % n_events_modulus == 0 and self.idx_out != 0):
             
-                f_idx = int(self.idx_out/n_events_modulus) - 1
+                f_idx        = int(self.idx_out/n_events_modulus) - 1
+                f_out_strArr = self.dir_out + '/strArr{0}'.format(f_idx)
                 
                 assert(f_idx >= 0)
                 
                 print("\nSaving structured array (shape: {0}) to file: {1}".format(self.strArr.shape, f_out_strArr))
                 print("\n idx_glb={0}, idx_out={1}, idx_arr={2}".format(i_glb, self.idx_arr, self.idx_out))
 
-                f_out_strArr = self.dir_out + '/strArr{0}'.format(f_idx)
                 self.idx_arr = 0
                 np.save(f_out_strArr, self.strArr)
-        
             
             self.fill_strArr(self.idx_arr, arr2d_s2, arr_s2areas_evt)
             self.idx_arr += 1
@@ -288,6 +323,7 @@ class mergePax():
                 file_out_s2_waveforms = 's2s/event{0:07d}_S2waveforms.pkl'.format(event.event_number)
                 df_chans.to_pickle(file_out_s2_waveforms)
 
+            break
             continue
             
             
@@ -295,11 +331,13 @@ class mergePax():
         # Save
         #----------------------------------------------------------------------
 
-        #print()
-        #print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
-        #f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
-        #df_merged.reset_index(inplace=True, drop=True)
-        #df_merged.to_pickle(f_out_df)
+        #if (False):
+        
+            #print()
+            #print("\nSaving dataframe (shape: {0}) to file: {1}".format(df_merged.shape, f_out_df))
+            #f_out_df     = self.dir_out + '/df_merge_dir{0}.hdf'.format(i_zip)
+            #df_merged.reset_index(inplace=True, drop=True)
+            #df_merged.to_pickle(f_out_df)
             
 
 
@@ -313,14 +351,14 @@ class mergePax():
     
     def fill_strArr(self, i_arr, arr2d_s2, arr_s2areas_evt):
         
-        #self.strArr[i_arr]['true_nels']    = true_nels
-        #self.strArr[i_arr]['true_nphs']    = true_nphs
+        self.strArr[i_arr]['true_nels']    = self.true_nels
+        self.strArr[i_arr]['true_nphs']    = self.true_nphs
         #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
-        #self.strArr[i_arr]['true_left']    = self.true_left
-        #self.strArr[i_arr]['true_right']   = self.true_right
-        #self.strArr[i_arr]['true_x']       = self.true_x
-        #self.strArr[i_arr]['true_y']       = self.true_y
+        self.strArr[i_arr]['true_left']    = self.true_left
+        self.strArr[i_arr]['true_right']   = self.true_right
+        self.strArr[i_arr]['true_x']       = self.true_x
+        self.strArr[i_arr]['true_y']       = self.true_y
         self.strArr[i_arr]['x']            = self.x
         self.strArr[i_arr]['y']            = self.y
         self.strArr[i_arr]['left']         = self.left
@@ -328,7 +366,7 @@ class mergePax():
         #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
         #self.strArr[i_arr]['s2_area']      = s2_area
         self.strArr[i_arr]['left_index']   = self.window_left
-        self.strArr[i_arr]['image']        = arr2d_s2
+        self.strArr[i_arr]['image']        = arr2d_s2.astype(np.float16)
         self.strArr[i_arr]['s2_areas']     = arr_s2areas_evt
         
         return
@@ -343,8 +381,11 @@ class mergePax():
         self.y            = np.nan
         self.true_x       = np.nan
         self.true_y       = np.nan
+        self.true_z       = np.nan
         self.true_left    = np.nan
         self.true_right   = np.nan
+        self.true_nels    = np.nan
+        self.true_nphs    = np.nan
         self.left         = np.nan
         self.right        = np.nan
         self.width        = np.nan
@@ -361,8 +402,8 @@ class mergePax():
                 ('true_right'  , np.int32),
                 ('true_x'      , np.float32),
                 ('true_y'      , np.float32),
-                ('true_n_els'  , np.int32),
-                ('true_n_phs'  , np.int32),
+                ('true_nels'   , np.int32),
+                ('true_nphs'   , np.int32),
                 ('left_index'  , np.int32),   # Reco
                 ('left'        , np.int32),
                 ('right'       , np.int32),
