@@ -131,7 +131,7 @@ class mergePax():
             intrs   = event.interactions
             nIntr   = len(intrs)
             trueS2  = True
-
+            
             
             #------------------------------------------------------------------
             #------------------------------------------------------------------
@@ -282,26 +282,6 @@ class mergePax():
             arr_sum_wf_top_df = arr_sum_wf_top_df[self.left:self.right]
             wf_sum_df         = np.sum(arr_sum_wf_top_df)
   
-
-            #------------------------------------------------------------------
-            #------------------------------------------------------------------
-            #if (False):
-            #    print("Total Sum, Evt: {0:.1f}".format(wf_sum_evt))
-            #    print("Total Sum, S2s: {0:.1f}".format(sum_s2_areas_evt))
-            #    print("Total Sum, Df:  {0:.1f}".format(wf_sum_df))
-
-            
-            
-            #------------------------------------------------------------------
-            #------------------------------------------------------------------
-            
-            #print()
-            #print("S2 Area:         {0:.1f}".format(self.s2_area))
-            #print("S2 AFT:          {0:.1f}".format(self.s2_aft))
-            #print("S2 Area Top:     {0:.1f}".format(self.s2_area_top))
-            #print("Summed S2 Areas: {0:.1f}".format(sum_s2_areas_evt))
-            
-
             
             
             #------------------------------------------------------------------
@@ -318,7 +298,8 @@ class mergePax():
             
             eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
-
+            eq3 = np.isclose(self.s2_area_top, sum_s2_areas_evt, atol=marg, rtol=marg)
+            
             if not (eq1):
                 
                 if (pct > 0.01):
@@ -326,7 +307,6 @@ class mergePax():
                         wf_sum_evt, wf_sum_df, diff1, pct))
                           
             assert(pct < 1e-1)
-            assert(np.isclose(self.s2_area_top, sum_s2_areas_evt, atol=marg, rtol=marg))
                 
             if not (eq2):
                 print()
@@ -336,8 +316,14 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
+                    
+            if not (eq3 and event.main_s2):
+                print()
+                print("NOT eq3")
+                
             #assert(eq1)
             #assert(eq2)
+            #assert(eq3)
             
             if (event.main_s2):
                 assert(np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg))
@@ -422,7 +408,7 @@ class mergePax():
 
         #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']  
-        
+        self.strArr[i_arr]['idx_out']        = self.idx_out
         self.strArr[i_arr]['event']          = self.event
         self.strArr[i_arr]['duration']       = self.duration()
         self.strArr[i_arr]['true_nels']      = self.true_nels
@@ -441,7 +427,6 @@ class mergePax():
         self.strArr[i_arr]['s2_area']        = self.s2_area
         self.strArr[i_arr]['s2_aft']         = self.s2_aft
         self.strArr[i_arr]['s2_area_top']    = self.s2_area_top
-        
         #self.strArr[i_arr]['s2_n_truncated'] = num_s2_samples_truncated
         
         return
@@ -452,7 +437,8 @@ class mergePax():
     
     def init_data(self, n_rows, n_channels=127, n_samples=1000):
         
-        self.event        = np.nan
+        self.idx_out      = 0
+        self.event        = 0
         self.duration     = np.nan
         self.x            = np.nan
         self.y            = np.nan
@@ -469,10 +455,13 @@ class mergePax():
         self.window_left  = np.nan
         self.window_right = np.nan
         self.window_width = np.nan
-
+        self.s2_area      = np.nan
+        self.s2_area_top  = np.nan
+        
         self.strArr = np.zeros(
             n_rows,
             dtype=[
+                ('idx_out'     , np.int32),
                 ('event'       , np.int32),
                 ('duration'    , np.float32),
                 ('x_ins'       , np.float32), # Truth
@@ -569,7 +558,7 @@ if (__name__ == "__main__"):
     mrg.main()
     t2 = time.time()
     
-    print("Done in {0:.1f}".format(t2-t1))
+    print("Done in {0:.1f} min".format( (t2-t1)/60 ))
     
     
     

@@ -16,5 +16,5 @@
 cd ${HOME}/dali/xe1t-processing/pax_merge
 source ~/.bash/.setup_pax_head.sh
 
-python ./merge_pax.py -dir_out ./temp_s2 -dir_in ../../data-xe1t/s2only/fax/ -dir_fmt [0-9]* -zip_fmt sim_s2s/*.zip -n_intr 0 -isStrict False
+python ./merge_pax.py -dir_out ./temp_s2 -dir_in ../../data-xe1t/s2only/fax/ -dir_fmt [0-0] -zip_fmt sim_s2s/*.zip -n_intr 0 -isStrict False
 
