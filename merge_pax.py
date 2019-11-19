@@ -124,14 +124,15 @@ class mergePax():
             #------------------------------------------------------------------
             #------------------------------------------------------------------
 
-            i_glb         = i_dir*self.n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
-            i_arr         = i_pkl
-            pklfile       = zfile.open(pklfilename)
-            event         = pickle.loads(zlib.decompress(pklfile.read()))
-            intrs         = event.interactions
-            nIntr         = len(intrs)
-            
+            i_glb   = i_dir*self.n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
+            i_arr   = i_pkl
+            pklfile = zfile.open(pklfilename)
+            event   = pickle.loads(zlib.decompress(pklfile.read()))
+            intrs   = event.interactions
+            nIntr   = len(intrs)
+            trueS2  = True
 
+            
             #------------------------------------------------------------------
             #------------------------------------------------------------------
 
@@ -147,21 +148,26 @@ class mergePax():
                 df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_last_electron')
                 df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_first_photon')
                 df_fax = helpers_fax_truth.nsToSamples(df_fax, 't_last_photon')
+                rows   = df_fax.shape[0] 
                 
-                assert(df_fax.shape[0] == 1)
-                
-                df_fax = df_fax.iloc[0,:]
-
-                self.true_x     = df_fax.loc['x']
-                self.true_y     = df_fax.loc['y']
-                self.true_z     = df_fax.loc['z']
-                self.true_left  = df_fax.loc['t_first_photon']
-                self.true_right = df_fax.loc['t_last_photon']
-                self.true_nels  = df_fax.loc['n_electrons']
-                self.true_nphs  = df_fax.loc['n_photons']
-                self.true_width = self.true_right - self.true_left
-            
+                if (rows == 0):
+                    trueS2 = False
+                elif (rows == 1):
+                    df_fax          = df_fax.iloc[0,:]
+                    self.true_x     = df_fax.loc['x']
+                    self.true_y     = df_fax.loc['y']
+                    self.true_z     = df_fax.loc['z']
+                    self.true_left  = df_fax.loc['t_first_photon']
+                    self.true_right = df_fax.loc['t_last_photon']
+                    self.true_nels  = df_fax.loc['n_electrons']
+                    self.true_nphs  = df_fax.loc['n_photons']
+                    self.true_width = self.true_right - self.true_left
+                else:
+                    trueS2 = False
+                    print(rows)
+                    
             except Exception as ex:
+                
                 print("Exception!")
                 print(ex)
             
@@ -172,7 +178,7 @@ class mergePax():
             if (i_pkl % 100 == 0):
                 print("      PKL File {0}: {1}".format(i_pkl, pklfilename))
             
-            if (nIntr < self.n_intr):
+            if (nIntr < self.n_intr or  not trueS2):
                 if (verbose):
                     print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
                 continue
@@ -191,10 +197,8 @@ class mergePax():
                 self.window_right = self.right
                 self.window_width = self.width
                 
-            else:
-
-                print("Using data from: '{0}'...".format(f_df_all))
-                
+            #else:
+                #print("Using data from: '{0}'...".format(f_df_all))
                 #event      = utils_event.getVerifiedEvent(event, verbose=False)
                 #x          = self.df_all.at[i_glb, 's2_x']
                 #y          = self.df_all.at[i_glb, 's2_y']
@@ -323,7 +327,11 @@ class mergePax():
                 file_out_s2_waveforms = 's2s/event{0:07d}_S2waveforms.pkl'.format(event.event_number)
                 df_chans.to_pickle(file_out_s2_waveforms)
 
-            break
+
+            #------------------------------------------------------------------
+            #------------------------------------------------------------------
+
+            #break
             continue
             
             
@@ -350,11 +358,11 @@ class mergePax():
     #--------------------------------------------------------------------------
     
     def fill_strArr(self, i_arr, arr2d_s2, arr_s2areas_evt):
-        
+
+        #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
+        #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']  
         self.strArr[i_arr]['true_nels']    = self.true_nels
         self.strArr[i_arr]['true_nphs']    = self.true_nphs
-        #self.strArr[i_arr]['x_ins']        = df.at[idx_df, 'x_ins']
-        #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']    
         self.strArr[i_arr]['true_left']    = self.true_left
         self.strArr[i_arr]['true_right']   = self.true_right
         self.strArr[i_arr]['true_x']       = self.true_x
