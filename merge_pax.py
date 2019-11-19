@@ -316,10 +316,8 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-                    
-            if not (eq3 and event.main_s2):
-                print()
-                print("NOT eq3")
+            if (event.main_s2 and not eq3):
+                print("NOT eq2")
                 
             #assert(eq1)
             #assert(eq2)
@@ -410,7 +408,7 @@ class mergePax():
         #self.strArr[i_arr]['y_ins']        = df.at[idx_df, 'y_ins']  
         self.strArr[i_arr]['idx_out']        = self.idx_out
         self.strArr[i_arr]['event']          = self.event
-        self.strArr[i_arr]['duration']       = self.duration()
+        self.strArr[i_arr]['duration']       = self.duration
         self.strArr[i_arr]['true_nels']      = self.true_nels
         self.strArr[i_arr]['true_nphs']      = self.true_nphs
         self.strArr[i_arr]['true_left']      = self.true_left
@@ -457,6 +455,7 @@ class mergePax():
         self.window_width = np.nan
         self.s2_area      = np.nan
         self.s2_area_top  = np.nan
+        self.s2_aft       = np.nan
         
         self.strArr = np.zeros(
             n_rows,
