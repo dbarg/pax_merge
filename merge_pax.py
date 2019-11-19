@@ -286,8 +286,9 @@ class mergePax():
             eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
 
-            #assert(eq1)
             if not (eq1):
+                print()
+                print("NOT eq21")
                 print(wf_sum_evt)
                 print(wf_sum_df)   
                 print(diff1)
@@ -295,12 +296,15 @@ class mergePax():
                 assert(diff1/wf_sum_evt < 1e-1)
                 
             if not (eq2):
+                print()
+                print("NOT eq2")
                 print(np.amin(arr_diff2))
                 print(np.amax(arr_diff2))
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-            assert(eq2)
+            #assert(eq1)
+            #assert(eq2)
             
             if (event.main_s2):
                 assert(np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg))
