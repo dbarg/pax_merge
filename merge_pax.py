@@ -188,6 +188,8 @@ class mergePax():
             # Determine S2 Window
             #------------------------------------------------------------------
             
+            self.duration     = event.duration()
+            
             if (event.main_s2):
 
                 pax_nn   = [x for x in event.main_s2.reconstructed_positions if x.algorithm == 'PosRecNeuralNet']
@@ -213,7 +215,6 @@ class mergePax():
                 self.y            = pax_nn.y
                 self.z            = pax_nn.z
                 self.event        = event.event_number
-                self.duration     = event.duration
                 
             else:
                 
