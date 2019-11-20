@@ -16,10 +16,8 @@ import zipfile
 import zlib
 
 from pax_utils import utils_event
-from pax_utils import utils_s2integrals
 from pax_utils import utils_interaction as interaction_utils
-from pax_utils import utils_waveform_channels
-from pax_utils import utils_waveform_summed
+from pax_utils import utils_waveform
 from utils_fax import helpers_fax_truth
 
 import merge_looper as looper
@@ -112,18 +110,21 @@ class mergePax():
         df_merged        = pd.DataFrame()
         faxfile          = re.sub(r'/zip/.*', '', os.path.abspath(zipname))
         faxfile          += '/fax_truth/fax_truth_{0:05d}.csv'.format(i_dir)
-            
+
+        dt21, dt32, dt43, dt54, dt65, dt76, dt87, dt98 = (0 for i in range(8))
+        
         assert(n_pkl_per_zip == 1000)
        
         
         #----------------------------------------------------------------------
         #----------------------------------------------------------------------
-
+        
         for i_pkl, pklfilename in enumerate(zip_namelist):
                
             #------------------------------------------------------------------
             #------------------------------------------------------------------
 
+            t1      = time.time()
             i_glb   = i_dir*self.n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
             i_arr   = i_pkl
             pklfile = zfile.open(pklfilename)
@@ -131,7 +132,8 @@ class mergePax():
             intrs   = event.interactions
             nIntr   = len(intrs)
             trueS2  = True
-            
+            t2      = time.time()
+            dt21    += t2 - t1
             
             #------------------------------------------------------------------
             #------------------------------------------------------------------
@@ -188,7 +190,9 @@ class mergePax():
             # Determine S2 Window
             #------------------------------------------------------------------
             
-            self.duration     = event.duration()
+            t3            = time.time()
+            dt32          += t3 - t2
+            self.duration = event.duration()
             
             if (event.main_s2):
 
@@ -240,6 +244,11 @@ class mergePax():
                 self.window_right = min(max(self.true_right, self.s2_right) + 1, self.window_left + self.n_samples_max)
                 self.window_width = self.window_right - self.window_left
                 
+                self.s2_area      = self.df_all.at[i_glb, 's2_area']
+                self.s2_aft       = self.df_all.at[i_glb, 's2_area_fraction_top']
+                self.s2_area_top  = self.s2_aft*self.s2_area
+                
+                
                 assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
 
                 self.left  = self.window_left
@@ -253,37 +262,64 @@ class mergePax():
             # Load Data
             #------------------------------------------------------------------
         
-            df_pkl_event           = utils_event.getEventDataFrameFromEvent(event)
-            df_pkl_intr            = interaction_utils.getInteractionDataFrameFromEvent(event)
-            df_pkl_s2s             = utils_s2integrals.getS2integralsDataFrame(event, 127)
-            df_pkl                 = df_pkl_event.merge(df_pkl_intr).merge(df_pkl_s2s)
+            t4                     = time.time()
+            dt43                   += t4 - t3
+            df_pkl                 = utils_event.getEventDataFrameFromEvent(event)
             df_pkl['event_number'] = event.event_number
+            df_pkl_intr            = interaction_utils.getInteractionDataFrameFromEvent(event)
+            df_pkl_s2s            = utils_waveform.getS2integralsDataFrame(event, 127)
+            df_pkl.merge(df_pkl_intr).merge(df_pkl_s2s)
+            t5                     = time.time()
+            dt54                   += t5 - t4
 
-                        
+         
             #----------------------------------------------------------------------
             # Get summed S2 waveform PAX from event
             #----------------------------------------------------------------------
             
-            arr_sum_wf_top_evt = utils_waveform_summed.GetSummedWaveformFromEvent(event)
+            arr_sum_wf_top_evt = utils_waveform.GetSummedWaveformFromEvent(event)
             arr_sum_wf_top_evt = arr_sum_wf_top_evt[self.left:self.right]
             wf_sum_evt         = np.sum(arr_sum_wf_top_evt)
-            arr_s2areas_evt    = df_pkl_s2s.iloc[0][1:].as_matrix().astype(np.float32)
-            sum_s2_areas_evt   = np.sum(arr_s2areas_evt)
+            arr_s2areas_evt    = None
+            
+            if (event.main_s2):
+                arr_s2areas_evt = event.main_s2.area_per_channel[i_pmt]
+            else:    
+                arr_s2areas_evt = utils_waveform.getS2areasFromDataFrame(event, cfg, self.s2_left, self.s2_right)
+                
+            sum_s2_areas_evt = np.sum(arr_s2areas_evt)
+            t6                     = time.time()
+            dt65                   += t6 - t5
             
             
             #------------------------------------------------------------------
             # Get channels & summed waveform as dataframe
             #------------------------------------------------------------------
             
-            df_chs_wfs_top     = utils_waveform_channels.getChannelsWaveformsDataFrame(event, cfg)
-            arr_sum_wf_top_df  = utils_waveform_summed.getSummedWaveformFromDataFrame(
-                df_chs_wfs_top,
-                event.length()
-            )
+            df_chs_wfs_top     = utils_waveform.getChannelsWaveformsDataFrame(event, cfg)
+            arr_sum_wf_top_df  = utils_waveform.getSummedWaveformFromDataFrame(df_chs_wfs_top, event.length())
             arr_sum_wf_top_df = arr_sum_wf_top_df[self.left:self.right]
             wf_sum_df         = np.sum(arr_sum_wf_top_df)
-  
+            t7                     = time.time()
+            dt76                   += t7 - t6
             
+            
+            #------------------------------------------------------------------
+            # Truncate to fixed S2 Width
+            #------------------------------------------------------------------
+            
+            arr2d    = utils_waveform.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
+            arr2d_s2 = np.zeros(shape=(127, self.n_samples_max))
+            idx_max  = min(self.window_right, self.window_left + self.n_samples_max)
+            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
+            
+            #if (self.window_width <= self.n_samples_max):
+            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
+            #else:
+            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
+            t8                     = time.time()
+            dt87                   += t8 - t7
+                
             
             #------------------------------------------------------------------
             # Sanity - Check Summed Waveform from the event & dataframe are equal
@@ -291,8 +327,7 @@ class mergePax():
             # To Do: Deal with truncated data
             #------------------------------------------------------------------
             
-            marg = 1e-1
-            
+            marg      = 1e-1
             diff1     = wf_sum_evt - wf_sum_df   
             pct       = max(diff1/wf_sum_df, diff1/wf_sum_evt)
             arr_diff2 = arr_sum_wf_top_evt - arr_sum_wf_top_df
@@ -300,6 +335,7 @@ class mergePax():
             eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
             eq3 = np.isclose(self.s2_area_top, sum_s2_areas_evt, atol=marg, rtol=marg)
+            eq4 = np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg)
             
             if not (eq1):
                 
@@ -309,7 +345,7 @@ class mergePax():
                           
             assert(pct < 1e-1)
                 
-            if not (eq2):
+            if (not eq2):
                 print()
                 print("NOT eq2")
                 print(np.amin(arr_diff2))
@@ -317,31 +353,29 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-            if (event.main_s2 and not eq3):
-                print("NOT eq2")
+            if (not eq3):
+                print()
+                print("NOT eq3")
+                #print(event.event_number)
+                #print("Area:             {0:.1f}".format(self.s2_area))
+                print("Area top:         {0:.1f}".format(self.s2_area_top))
+                print("Sum WF evt:       {0:.1f}".format(wf_sum_evt))
+                print("Sum WF df:        {0:.1f}".format(wf_sum_df))
+                print("Sum of areas evt: {0:.1f}".format(sum_s2_areas_evt))
+                #print(self.df_all.columns)
+                print()
+                
+            #if (not eq4):
+            #    print("NOT eq4")
                 
             #assert(eq1)
             #assert(eq2)
             #assert(eq3)
+            #assert(eq4)
             
-            if (event.main_s2):
-                assert(np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg))
             
-
-            #------------------------------------------------------------------
-            # Truncate to fixed S2 Width
-            #------------------------------------------------------------------
-            
-            arr2d = utils_waveform_channels.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
-            arr2d_s2                         = np.zeros(shape=(127, self.n_samples_max))
-            idx_max                          = min(self.window_right, self.window_left + self.n_samples_max)
-            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
-            
-            #if (self.window_width <= self.n_samples_max):
-            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
-            #else:
-            #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
-                
+            t9                     = time.time()
+            dt98                   += t9 - t8
                 
             #------------------------------------------------------------------
             # Save Waveform Dataframes
@@ -369,20 +403,35 @@ class mergePax():
             # Save Waveform Dataframes
             #------------------------------------------------------------------
             
-            df_merged = df_merged.append(df_pkl_event)
-            
             if (False):
+                df_merged = df_merged.append(df_pkl)
                 file_out_s2_waveforms = 's2s/event{0:07d}_S2waveforms.pkl'.format(event.event_number)
                 df_chans.to_pickle(file_out_s2_waveforms)
 
 
             #------------------------------------------------------------------
+            # End loop on PKL files
             #------------------------------------------------------------------
 
             #break
             continue
             
-            
+        
+        #----------------------------------------------------------------------
+        # Performance
+        #----------------------------------------------------------------------
+
+        if (True):
+            print()
+            print("Zip: {0:.1f} s".format(dt21))
+            print("FAX: {0:.1f} s".format(dt32))
+            print("DF:  {0:.1f} s".format(dt54))
+            print("PAX: {0:.1f} s".format(dt65))
+            print("DF:  {0:.1f} s".format(dt76))
+            print("Arr: {0:.1f} s".format(dt87))
+            print("San: {0:.1f} s".format(dt98))
+
+        
         #----------------------------------------------------------------------
         # Save
         #----------------------------------------------------------------------
