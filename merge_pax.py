@@ -239,14 +239,13 @@ class mergePax():
                 self.left         = self.df_all.at[i_glb, 's2_left']
                 self.s2_center    = self.df_all.at[i_glb, 's2_center_time']
                 self.s2_width     = 2*(self.s2_center - self.left)
+                self.right        = self.left + self.s2_width   
                 self.window_left  = min(self.true_left, self.left )
                 self.window_right = min(max(self.true_right, self.right) + 1, self.window_left + self.n_samples_max)
                 self.window_width = self.window_right - self.window_left
-                
                 self.s2_area      = self.df_all.at[i_glb, 's2_area']
                 self.s2_aft       = self.df_all.at[i_glb, 's2_area_fraction_top']
                 self.s2_area_top  = self.s2_aft*self.s2_area
-                
                 
                 assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
 
@@ -332,17 +331,16 @@ class mergePax():
             pct       = max(diff1/wf_sum_df, diff1/wf_sum_evt)
             arr_diff2 = arr_sum_wf_top_evt - arr_sum_wf_top_df
             
-            eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
+            eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg) and (pct < 1e-1)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
             eq3 = np.isclose(self.s2_area_top, sum_s2_areas_df, atol=marg, rtol=marg)
             eq4 = np.isclose(wf_sum_evt, sum_s2_areas_df , atol=marg, rtol=marg)
             eq5 = np.isclose(self.s2_area_top, wf_sum_evt, atol=marg, rtol=marg)
             
-            if not (eq1):
+            if (not eq1):
                 
-                if (pct > 0.01):
-                    print("\n-> Sum of Summed waveform unequal for evt:{0} & df: {1}. Diff: {2}, Pct: {3}\n".format(
-                        wf_sum_evt, wf_sum_df, diff1, pct))
+                print("\n-> Sum of Summed waveform unequal for evt:{0} & df: {1}. Diff: {2}, Pct: {3}\n".format(
+                    wf_sum_evt, wf_sum_df, diff1, pct))
                           
             assert(pct < 1e-1)
                 
@@ -354,18 +352,18 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-            if (not eq3):
-                print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
-                #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
-                print("   S2 Area Top (evt):    {0:.3f}".format(self.s2_area_top))
-                print("   S2 Area Top (df):     {0:.3f}".format(s2area_df))
-                print("   Sum of S2 Areas (df): {0:.3f}".format(sum_s2_areas_df))
-                print("   Sum of Sum WF (evt):  {0:.3f}".format(wf_sum_evt))
-                print("   Sum of Sum WF (df):   {0:.3f}".format(wf_sum_df))
-                print(self.df_all.columns)
-                
-            #if (not eq4):
-            #    print("NOT eq4")
+            #if (not eq3):
+            #    print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
+            #    #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
+            #    print("   True Els:             {0}".format( self.true_nels ))
+            #    print("   S2 Area Top (evt):    {0:.1f}".format(self.s2_area_top))
+            #    print("   S2 Area Top (df):     {0:.1f}".format(s2area_df))
+            #    print("   Sum of S2 Areas (df): {0:.1f}".format(sum_s2_areas_df))
+            #    print("   Sum of Sum WF (evt):  {0:.1f}".format(wf_sum_evt))
+            #    print("   Sum of Sum WF (df):   {0:.1f}".format(wf_sum_df))
+
+            if (not eq4):
+                print("NOT eq4")
                 
             #if (not eq5):
             #    print("\nError! S2 area NOT EQUAL to Sum of Sum Waveform from event.")
@@ -376,10 +374,10 @@ class mergePax():
             #    print("   Sum of Sum WF (df):  {0:.1f}".format(wf_sum_df))
             #    print("   Sum of S2 Areas:     {0:.1f}".format(sum_s2_areas_evt))
                 
-            #assert(eq1)
-            #assert(eq2)
+            assert(eq1)
+            assert(eq2)
             #assert(eq3)
-            #assert(eq4)
+            assert(eq4)
             #assert(eq5)
             
             
