@@ -307,17 +307,41 @@ class mergePax():
             
             arr2d    = utils_waveform.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
             arr2d_s2 = np.zeros(shape=(127, self.n_samples_max))
-            idx_max  = min(self.window_right, self.window_left + self.n_samples_max)
-            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
+            
+            #idx_max  = min(self.window_right, self.window_left + self.n_samples_max)
+            #arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
             
             #if (self.window_width <= self.n_samples_max):
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
             #else:
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_left+self.n_samples_max]
+            
             t8                     = time.time()
             dt87                   += t8 - t7
                 
             
+            #------------------------------------------------------------------
+            # Sanity
+            #------------------------------------------------------------------
+            
+            if (True):
+                
+                i0 = self.window_left + self.n_samples_max)
+                i1 = max(self.right, lStart)
+                
+                arr2d_added_left        = arr2d[:, self.window_left:self.left]
+                arr2d_trunc_right       = arr2d[:, i0:i1]
+                arr_s2areas_to_subtract = np.sum(arr2d_added_left , axis=1)
+                arr_s2areas_to_add      = np.sum(arr2d_trunc_right, axis=1)
+                s2area_to_subtract      = np.sum(arr_s2areas_to_subtract)
+                s2area_to_add           = np.sum(arr_s2areas_to_add)
+            
+                assert(
+                    np.allclose(arr_s2areas_df, np.sum(arr2d_s2, axis=1) - arr_s2areas_to_subtract + arr_s2areas_to_add)
+                )
+                
+                
+                
             #------------------------------------------------------------------
             # Sanity - Check Summed Waveform from the event & dataframe are equal
             # To Do: Check s2 areas from df
@@ -378,10 +402,10 @@ class mergePax():
             assert(eq4)
             #assert(eq5)
             
-            
             t9                     = time.time()
             dt98                   += t9 - t8
-                
+
+            
             #------------------------------------------------------------------
             # Save Waveform Dataframes
             #------------------------------------------------------------------
