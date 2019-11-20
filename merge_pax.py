@@ -265,7 +265,7 @@ class mergePax():
             df_pkl                 = utils_event.getEventDataFrameFromEvent(event)
             df_pkl['event_number'] = event.event_number
             df_pkl_intr            = interaction_utils.getInteractionDataFrameFromEvent(event)
-            df_pkl_s2s            = utils_waveform.getS2integralsDataFrame(event, 127)
+            df_pkl_s2s             = utils_waveform.getS2integralsDataFrame(event, 127)
             df_pkl.merge(df_pkl_intr).merge(df_pkl_s2s)
             t5                     = time.time()
             dt54                   += t5 - t4
@@ -294,10 +294,8 @@ class mergePax():
             arr_sum_wf_top_df = utils_waveform.getSummedWaveformFromDataFrame(df_chs_wfs_top, event.length())
             arr_sum_wf_top_df = arr_sum_wf_top_df[self.left:self.right]
             wf_sum_df         = np.sum(arr_sum_wf_top_df)
-            s2area_df         = utils_waveform.getS2areaFromDataFrame(
-                df_chs_wfs_top , event.length(), self.left, self.right)
-            arr_s2areas_df    = utils_waveform.getS2areasFromDataFrame(
-                df_chs_wfs_top, event.length(), self.left, self.right)
+            #s2area_df         = utils_waveform.getS2areaFromDataFrame(df_chs_wfs_top , event.length(), self.left, self.right)
+            arr_s2areas_df    = utils_waveform.getS2areasFromDataFrame(df_chs_wfs_top, event.length(), self.left, self.right)
             sum_s2_areas_df   = np.sum(arr_s2areas_df)
             t7                = time.time()
             dt76              += t7 - t6
@@ -352,15 +350,15 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-            #if (not eq3):
-            #    print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
-            #    #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
-            #    print("   True Els:             {0}".format( self.true_nels ))
-            #    print("   S2 Area Top (evt):    {0:.1f}".format(self.s2_area_top))
-            #    print("   S2 Area Top (df):     {0:.1f}".format(s2area_df))
-            #    print("   Sum of S2 Areas (df): {0:.1f}".format(sum_s2_areas_df))
-            #    print("   Sum of Sum WF (evt):  {0:.1f}".format(wf_sum_evt))
-            #    print("   Sum of Sum WF (df):   {0:.1f}".format(wf_sum_df))
+            if (not eq3):
+                print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
+                #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
+                print("   True Els:             {0}".format( self.true_nels ))
+                print("   S2 Area Top (evt):    {0:.1f}".format(self.s2_area_top))
+                #print("   S2 Area Top (df):     {0:.1f}".format(s2area_df))
+                print("   Sum of S2 Areas (df): {0:.1f}".format(sum_s2_areas_df))
+                print("   Sum of Sum WF (evt):  {0:.1f}".format(wf_sum_evt))
+                print("   Sum of Sum WF (df):   {0:.1f}".format(wf_sum_df))
 
             if (not eq4):
                 print("NOT eq4")
