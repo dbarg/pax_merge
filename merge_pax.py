@@ -236,12 +236,11 @@ class mergePax():
                 self.true_nels    = self.df_all.at[i_glb, 'n_electrons_true']
                 self.true_nphs    = self.df_all.at[i_glb, 'n_photons_true']
                 self.true_width   = self.true_right - self.true_left
-                self.s2_left      = self.df_all.at[i_glb, 's2_left']
+                self.left         = self.df_all.at[i_glb, 's2_left']
                 self.s2_center    = self.df_all.at[i_glb, 's2_center_time']
-                self.s2_width     = 2*(self.s2_center - self.s2_left)
-                self.s2_right     = self.s2_left + self.s2_width   
-                self.window_left  = min(self.true_left, self.s2_left )
-                self.window_right = min(max(self.true_right, self.s2_right) + 1, self.window_left + self.n_samples_max)
+                self.s2_width     = 2*(self.s2_center - self.left)
+                self.window_left  = min(self.true_left, self.left )
+                self.window_right = min(max(self.true_right, self.right) + 1, self.window_left + self.n_samples_max)
                 self.window_width = self.window_right - self.window_left
                 
                 self.s2_area      = self.df_all.at[i_glb, 's2_area']
@@ -251,8 +250,8 @@ class mergePax():
                 
                 assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
 
-                self.left  = self.window_left
-                self.right = self.window_right
+                #self.left  = self.window_left
+                #self.right = self.window_right
                 
 
             assert(self.left >= 0 and self.right >= self.left)
@@ -282,7 +281,7 @@ class mergePax():
             wf_sum_evt         = np.sum(arr_sum_wf_top_evt)
             arr_s2areas_evt    = np.zeros(127)
             if (event.main_s2):
-                arr_s2areas_evt = event.main_s2.area_per_channel
+                arr_s2areas_evt = event.main_s2.area_per_channel[0:127]
             sum_s2_areas_evt   = np.sum(arr_s2areas_evt)
             t6                     = time.time()
             dt65                   += t6 - t5
@@ -297,9 +296,9 @@ class mergePax():
             arr_sum_wf_top_df = arr_sum_wf_top_df[self.left:self.right]
             wf_sum_df         = np.sum(arr_sum_wf_top_df)
             s2area_df         = utils_waveform.getS2areaFromDataFrame(
-                df_chs_wfs_top , event.length(), self.s2_left, self.s2_right)
+                df_chs_wfs_top , event.length(), self.left, self.right)
             arr_s2areas_df    = utils_waveform.getS2areasFromDataFrame(
-                df_chs_wfs_top, event.length(), self.s2_left, self.s2_right)
+                df_chs_wfs_top, event.length(), self.left, self.right)
             sum_s2_areas_df   = np.sum(arr_s2areas_df)
             t7                = time.time()
             dt76              += t7 - t6
@@ -363,6 +362,7 @@ class mergePax():
                 print("   Sum of S2 Areas (df): {0:.3f}".format(sum_s2_areas_df))
                 print("   Sum of Sum WF (evt):  {0:.3f}".format(wf_sum_evt))
                 print("   Sum of Sum WF (df):   {0:.3f}".format(wf_sum_df))
+                print(self.df_all.columns)
                 
             #if (not eq4):
             #    print("NOT eq4")
