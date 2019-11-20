@@ -280,14 +280,10 @@ class mergePax():
             arr_sum_wf_top_evt = utils_waveform.GetSummedWaveformFromEvent(event)
             arr_sum_wf_top_evt = arr_sum_wf_top_evt[self.left:self.right]
             wf_sum_evt         = np.sum(arr_sum_wf_top_evt)
-            arr_s2areas_evt    = None
-            
+            arr_s2areas_evt    = np.zeros(127)
             if (event.main_s2):
-                arr_s2areas_evt = event.main_s2.area_per_channel[i_pmt]
-            else:    
-                arr_s2areas_evt = utils_waveform.getS2areasFromDataFrame(event, cfg, self.s2_left, self.s2_right)
-                
-            sum_s2_areas_evt = np.sum(arr_s2areas_evt)
+                arr_s2areas_evt = event.main_s2.area_per_channel
+            sum_s2_areas_evt   = np.sum(arr_s2areas_evt)
             t6                     = time.time()
             dt65                   += t6 - t5
             
@@ -296,12 +292,17 @@ class mergePax():
             # Get channels & summed waveform as dataframe
             #------------------------------------------------------------------
             
-            df_chs_wfs_top     = utils_waveform.getChannelsWaveformsDataFrame(event, cfg)
-            arr_sum_wf_top_df  = utils_waveform.getSummedWaveformFromDataFrame(df_chs_wfs_top, event.length())
+            df_chs_wfs_top    = utils_waveform.getChannelsWaveformsDataFrame(event, cfg)
+            arr_sum_wf_top_df = utils_waveform.getSummedWaveformFromDataFrame(df_chs_wfs_top, event.length())
             arr_sum_wf_top_df = arr_sum_wf_top_df[self.left:self.right]
             wf_sum_df         = np.sum(arr_sum_wf_top_df)
-            t7                     = time.time()
-            dt76                   += t7 - t6
+            s2area_df         = utils_waveform.getS2areaFromDataFrame(
+                df_chs_wfs_top , event.length(), self.s2_left, self.s2_right)
+            arr_s2areas_df    = utils_waveform.getS2areasFromDataFrame(
+                df_chs_wfs_top, event.length(), self.s2_left, self.s2_right)
+            sum_s2_areas_df   = np.sum(arr_s2areas_df)
+            t7                = time.time()
+            dt76              += t7 - t6
             
             
             #------------------------------------------------------------------
@@ -334,8 +335,9 @@ class mergePax():
             
             eq1 = np.isclose(diff1, 0, atol=marg, rtol=marg)
             eq2 = np.allclose(arr_diff2, np.zeros(arr_diff2.size), atol=marg, rtol=marg)
-            eq3 = np.isclose(self.s2_area_top, sum_s2_areas_evt, atol=marg, rtol=marg)
-            eq4 = np.isclose(wf_sum_evt, sum_s2_areas_evt , atol=marg, rtol=marg)
+            eq3 = np.isclose(self.s2_area_top, sum_s2_areas_df, atol=marg, rtol=marg)
+            eq4 = np.isclose(wf_sum_evt, sum_s2_areas_df , atol=marg, rtol=marg)
+            eq5 = np.isclose(self.s2_area_top, wf_sum_evt, atol=marg, rtol=marg)
             
             if not (eq1):
                 
@@ -354,24 +356,31 @@ class mergePax():
                 print(wf_sum_df)
 
             if (not eq3):
-                print()
-                print("NOT eq3")
-                #print(event.event_number)
-                #print("Area:             {0:.1f}".format(self.s2_area))
-                print("Area top:         {0:.1f}".format(self.s2_area_top))
-                print("Sum WF evt:       {0:.1f}".format(wf_sum_evt))
-                print("Sum WF df:        {0:.1f}".format(wf_sum_df))
-                print("Sum of areas evt: {0:.1f}".format(sum_s2_areas_evt))
-                #print(self.df_all.columns)
-                print()
+                print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
+                #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
+                print("   S2 Area Top (evt):    {0:.3f}".format(self.s2_area_top))
+                print("   S2 Area Top (df):     {0:.3f}".format(s2area_df))
+                print("   Sum of S2 Areas (df): {0:.3f}".format(sum_s2_areas_df))
+                print("   Sum of Sum WF (evt):  {0:.3f}".format(wf_sum_evt))
+                print("   Sum of Sum WF (df):   {0:.3f}".format(wf_sum_df))
                 
             #if (not eq4):
             #    print("NOT eq4")
+                
+            #if (not eq5):
+            #    print("\nError! S2 area NOT EQUAL to Sum of Sum Waveform from event.")
+            #    print("   event: {0}".format(event.event_number))
+            #    print("   S2 Area Top:         {0:.1f}".format(self.s2_area_top))
+            #    print("   S2 AFT:              {0:.2f}".format(self.s2_aft))
+            #    print("   Sum of Sum WF (evt): {0:.1f}".format(wf_sum_evt))
+            #    print("   Sum of Sum WF (df):  {0:.1f}".format(wf_sum_df))
+            #    print("   Sum of S2 Areas:     {0:.1f}".format(sum_s2_areas_evt))
                 
             #assert(eq1)
             #assert(eq2)
             #assert(eq3)
             #assert(eq4)
+            #assert(eq5)
             
             
             t9                     = time.time()
