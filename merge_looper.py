@@ -22,9 +22,10 @@ def looper(dir_in, dir_fmt, zip_fmt, func):
     assert(os.path.exists(dir_in))
     
     lst_dir = glob.glob(dir_in + '/' + dir_fmt)
-    lst_dir = sorted(lst_dir)
+    lst_dir.sort()
+    lst_dir.sort(key=len)
     n_dir   = len(lst_dir)
-    
+
     print("{0} Directories found in {1}".format(n_dir, dir_in))
     
     
@@ -52,6 +53,7 @@ def looper(dir_in, dir_fmt, zip_fmt, func):
             
             func(zipname, i_dir, i_zip)
             
+            #break
             continue
                 
         #----------------------------------------------------------------------

@@ -34,7 +34,6 @@ class mergePax():
     def __init__(self):
 
         #self.n_zip_per_dir = 10 # S2 only
-        self.n_zip_per_dir = 1
   
 
         #----------------------------------------------------------------------
@@ -42,6 +41,7 @@ class mergePax():
         #----------------------------------------------------------------------
     
         args               = parse_arguments()
+        self.n_zip_per_dir = args.n_zip
         self.dir_out       = args.dir_out
         self.dir_in        = args.dir_in
         self.dir_fmt       = args.dir_fmt
@@ -126,7 +126,6 @@ class mergePax():
 
             t1      = time.time()
             i_glb   = i_dir*self.n_zip_per_dir*n_pkl_per_zip + i_zip*n_pkl_per_zip + i_pkl
-            i_arr   = i_pkl
             pklfile = zfile.open(pklfilename)
             event   = pickle.loads(zlib.decompress(pklfile.read()))
             intrs   = event.interactions
@@ -134,6 +133,15 @@ class mergePax():
             trueS2  = True
             t2      = time.time()
             dt21    += t2 - t1
+            
+            if (False and i_pkl == 0):
+                
+                print("i_pkl: {0}".format(i_pkl))
+                print("i_zip: {0}".format(i_zip))
+                print("i_dir: {0}".format(i_dir))
+                print("i_glb: {0}".format(i_glb))
+                print("i_glb: {0}".format(i_glb))
+                
             
             #------------------------------------------------------------------
             #------------------------------------------------------------------
@@ -326,19 +334,18 @@ class mergePax():
             
             if (True):
                 
-                i0 = self.window_left + self.n_samples_max)
-                i1 = max(self.right, lStart)
+                i0 = self.window_left + self.n_samples_max
+                i1 = max(self.right, i0)
                 
-                arr2d_added_left        = arr2d[:, self.window_left:self.left]
-                arr2d_trunc_right       = arr2d[:, i0:i1]
-                arr_s2areas_to_subtract = np.sum(arr2d_added_left , axis=1)
-                arr_s2areas_to_add      = np.sum(arr2d_trunc_right, axis=1)
-                s2area_to_subtract      = np.sum(arr_s2areas_to_subtract)
-                s2area_to_add           = np.sum(arr_s2areas_to_add)
-            
-                assert(
-                    np.allclose(arr_s2areas_df, np.sum(arr2d_s2, axis=1) - arr_s2areas_to_subtract + arr_s2areas_to_add)
-                )
+                #arr2d_added_left        = arr2d[:, self.window_left:self.left]
+                #arr2d_trunc_right       = arr2d[:, i0:i1]
+                #arr_s2areas_to_subtract = np.sum(arr2d_added_left , axis=1)
+                #arr_s2areas_to_add      = np.sum(arr2d_trunc_right, axis=1)
+                #s2area_to_subtract      = np.sum(arr_s2areas_to_subtract)
+                #s2area_to_add           = np.sum(arr_s2areas_to_add)
+                #assert(
+                #    np.allclose(arr_s2areas_df, np.sum(arr2d_s2, axis=1) - arr_s2areas_to_subtract + arr_s2areas_to_add)
+                #)
                 
                 
                 
@@ -374,15 +381,15 @@ class mergePax():
                 print(wf_sum_evt)
                 print(wf_sum_df)
 
-            if (not eq3):
-                print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
-                #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
-                print("   True Els:             {0}".format( self.true_nels ))
-                print("   S2 Area Top (evt):    {0:.1f}".format(self.s2_area_top))
-                #print("   S2 Area Top (df):     {0:.1f}".format(s2area_df))
-                print("   Sum of S2 Areas (df): {0:.1f}".format(sum_s2_areas_df))
-                print("   Sum of Sum WF (evt):  {0:.1f}".format(wf_sum_evt))
-                print("   Sum of Sum WF (df):   {0:.1f}".format(wf_sum_df))
+            #if (not eq3):
+            #    print("\nError! Event {0}: S2 area NOT EQUAL to Sum of S2 areas.".format(event.event_number))
+            #    #print("   S2 Area (evt):        {0:.3f}".format(self.s2_area))
+            #    print("   True Els:             {0}".format( self.true_nels ))
+            #    print("   S2 Area Top (evt):    {0:.1f}".format(self.s2_area_top))
+            #    #print("   S2 Area Top (df):     {0:.1f}".format(s2area_df))
+            #    print("   Sum of S2 Areas (df): {0:.1f}".format(sum_s2_areas_df))
+            #    print("   Sum of Sum WF (evt):  {0:.1f}".format(wf_sum_evt))
+            #    print("   Sum of Sum WF (df):   {0:.1f}".format(wf_sum_df))
 
             if (not eq4):
                 print("NOT eq4")
@@ -602,7 +609,11 @@ class mergePax():
     
     def main(self):
             
-        looper.looper(self.dir_in, self.dir_fmt, self.zip_fmt, self.zip_callback_pax)
+        looper.looper(
+            self.dir_in,
+            self.dir_fmt,
+            self.zip_fmt,
+            self.zip_callback_pax)
         
         return
 
@@ -614,12 +625,13 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('-dir_out' , required=True)
-    parser.add_argument('-dir_in'  , required=True)
-    parser.add_argument('-dir_fmt' , required=True)
-    parser.add_argument('-zip_fmt' , required=True)
-    parser.add_argument('-n_intr'  , required=True, type=int)
-    parser.add_argument('-isStrict', required=True, default=True, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('-dir_out'    , required=True)
+    parser.add_argument('-dir_in'     , required=True)
+    parser.add_argument('-dir_fmt'    , required=True)
+    parser.add_argument('-zip_fmt'    , required=True)
+    parser.add_argument('-n_zip'      , required=True, type=int)
+    parser.add_argument('-n_intr'     , required=True, type=int)
+    parser.add_argument('-isStrict'   , required=True, default=True, type=lambda x: (str(x).lower() == 'true'))
 
     return parser.parse_args()
 
