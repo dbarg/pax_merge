@@ -188,7 +188,7 @@ class mergePax():
             if (i_pkl % 100 == 0):
                 print("      PKL File {0}: {1}".format(i_pkl, pklfilename))
             
-            if (nIntr < self.n_intr or  not trueS2):
+            if (nIntr < self.n_intr or not trueS2):
                 if (verbose):
                     print("      -> Global event number:{0}, {1} interactions. Skipping...".format(i_glb, nIntr))
                 continue
@@ -248,12 +248,12 @@ class mergePax():
                 self.s2_center    = self.df_all.at[i_glb, 's2_center_time']
                 self.s2_width     = 2*(self.s2_center - self.left)
                 self.right        = self.left + self.s2_width   
-                self.window_left  = min(self.true_left, self.left )
-                self.window_right = min(max(self.true_right, self.right) + 1, self.window_left + self.n_samples_max)
-                self.window_width = self.window_right - self.window_left
                 self.s2_area      = self.df_all.at[i_glb, 's2_area']
                 self.s2_aft       = self.df_all.at[i_glb, 's2_area_fraction_top']
                 self.s2_area_top  = self.s2_aft*self.s2_area
+                self.window_left  = min(self.true_left, self.left )
+                self.window_right = min(max(self.true_right, self.right), self.window_left + self.n_samples_max)
+                self.window_width = self.window_right - self.window_left
                 
                 assert(event.duration() == self.df_all.at[i_glb, 'event_duration'])
 
@@ -316,8 +316,8 @@ class mergePax():
             arr2d    = utils_waveform.covertChannelWaveformsDataFrametoArray(df_chs_wfs_top, 0, event.length())
             arr2d_s2 = np.zeros(shape=(127, self.n_samples_max))
             
-            #idx_max  = min(self.window_right, self.window_left + self.n_samples_max)
-            #arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
+            idx_max  = min(self.window_right, self.window_left + self.n_samples_max)
+            arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:idx_max]
             
             #if (self.window_width <= self.n_samples_max):
             #    arr2d_s2[:, 0:self.window_width] = arr2d[:, self.window_left:self.window_right]
